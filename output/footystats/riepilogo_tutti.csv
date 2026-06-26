@@ -1,0 +1,451 @@
+campionato,mercato,partite,winrate_base,miglior_range,miglior_roi,range_robusto,roi_robusto,n_robusto,wr_robusto
+argentina-prim-b-nacional,Over 0.5 HT (gol 1° tempo),4271,58.0,odd_2 4.20-4.25,4.5,odd_2 3.35-3.40,0.1,142,72.5
+argentina-prim-b-nacional,Over 0.5 2T (gol 2° tempo),4271,67.5,odd_2 4.00-4.05,6.1,odd_2 3.35-3.40,2.8,142,80.3
+argentina-prim-b-nacional,Over 1.5 2T (2+ gol 2° tempo),4271,31.4,odd_dog 6.00-6.05,8.4,odd_dog 3.70-3.75,-7.7,91,44.0
+argentina-prim-b-nacional,Over 1.5 FT,4271,59.8,odd_2 3.35-3.40,22.2,odd_2 3.35-3.40,22.2,142,78.9
+argentina-prim-b-nacional,Over 2.5 FT,4271,32.3,odd_2 3.35-3.40,26.4,odd_2 3.35-3.40,26.4,142,47.9
+argentina-prim-b-nacional,Over 3.5 FT,4271,14.4,spread_fav_dog 2.20-2.25,32.3,odd_x 3.25-3.30,1.8,85,22.4
+argentina-prim-b-nacional,BTTS Sì,4271,40.9,odd_1 2.80-2.85,39.3,odd_2 3.35-3.40,21.7,142,55.6
+argentina-prim-b-nacional,Vittoria 1,4271,43.4,odd_2 2.40-2.45,25.9,odd_fav 2.40-2.45,13.5,180,43.9
+argentina-prim-b-nacional,Pareggio X,4271,33.3,spread_fav_dog 1.05-1.10,53.3,odd_dog 4.20-4.25,31.8,91,44.0
+argentina-prim-b-nacional,Vittoria 2,4271,23.3,spread_fav_dog 2.55-2.60,66.9,odd_1 1.85-1.90,15.1,138,27.5
+argentina-primera-division,Over 0.5 HT (gol 1° tempo),4458,63.4,spread_fav_dog 2.85-2.90,16.4,odd_2 2.85-2.90,3.2,99,74.7
+argentina-primera-division,Over 0.5 2T (gol 2° tempo),4458,71.1,odd_2 1.95-2.00,15.2,odd_fav 2.30-2.35,4.0,160,81.2
+argentina-primera-division,Over 1.5 2T (2+ gol 2° tempo),4458,35.9,spread_fav_dog 2.60-2.65,24.7,odd_dog 3.45-3.50,0.0,84,47.6
+argentina-primera-division,Over 1.5 FT,4458,65.4,odd_1 2.80-2.85,18.9,odd_2 2.95-3.00,5.2,111,73.0
+argentina-primera-division,Over 2.5 FT,4458,39.0,spread_fav_dog 2.35-2.40,25.6,odd_x 2.80-2.85,6.7,118,37.3
+argentina-primera-division,Over 3.5 FT,4458,19.2,odd_2 3.00-3.05,33.0,odd_dog 3.45-3.50,29.1,84,32.1
+argentina-primera-division,BTTS Sì,4458,44.8,odd_x 3.70-3.75,25.6,odd_fav 2.70-2.75,12.8,87,56.3
+argentina-primera-division,Vittoria 1,4458,43.0,spread_fav_dog 2.85-2.90,66.1,spread_fav_dog 1.20-1.25,16.1,104,46.2
+argentina-primera-division,Pareggio X,4458,30.1,odd_2 4.05-4.10,49.4,odd_1 2.55-2.60,19.1,87,40.2
+argentina-primera-division,Vittoria 2,4458,26.9,odd_1 1.30-1.35,94.6,odd_x 3.60-3.65,12.6,108,27.8
+australia-a-league,Over 0.5 HT (gol 1° tempo),1983,74.7,odd_1 1.60-1.65,22.9,odd_fav 2.25-2.30,12.1,96,81.2
+australia-a-league,Over 0.5 2T (gol 2° tempo),1983,82.0,odd_x 4.20-4.25,28.0,odd_x 3.80-3.85,13.5,115,88.7
+australia-a-league,Over 1.5 2T (2+ gol 2° tempo),1983,50.6,odd_x 4.20-4.25,57.5,odd_fav 2.05-2.10,27.6,102,60.8
+australia-a-league,Over 1.5 FT,1983,80.5,odd_2 3.00-3.05,17.9,odd_fav 2.25-2.30,8.4,96,87.5
+australia-a-league,Over 2.5 FT,1983,59.2,odd_x 4.20-4.25,29.6,odd_fav 2.05-2.10,12.4,102,65.7
+australia-a-league,Over 3.5 FT,1983,34.9,odd_dog 3.30-3.35,38.0,odd_fav 2.20-2.25,6.6,105,40.0
+australia-a-league,BTTS Sì,1983,60.0,odd_2 3.25-3.30,25.8,odd_fav 1.70-1.75,14.8,81,70.4
+australia-a-league,Vittoria 1,1983,43.9,spread_fav_dog 1.90-1.95,35.9,odd_fav 2.15-2.20,18.8,107,50.5
+australia-a-league,Pareggio X,1983,23.7,odd_1 2.55-2.60,33.4,odd_fav 2.20-2.25,26.0,105,36.2
+australia-a-league,Vittoria 2,1983,32.4,odd_1 2.50-2.55,57.7,odd_fav 1.80-1.85,18.1,86,37.2
+austria-2-liga,Over 0.5 HT (gol 1° tempo),2548,72.4,odd_1 2.60-2.65,20.7,odd_x 4.00-4.05,11.6,89,80.9
+austria-2-liga,Over 0.5 2T (gol 2° tempo),2548,81.0,odd_2 2.90-2.95,24.1,odd_1 2.15-2.20,14.4,85,89.4
+austria-2-liga,Over 1.5 2T (2+ gol 2° tempo),2548,50.2,odd_dog 3.95-4.00,44.4,odd_x 3.65-3.70,22.1,117,58.1
+austria-2-liga,Over 1.5 FT,2548,79.9,odd_1 2.70-2.75,10.2,odd_fav 2.45-2.50,10.0,85,88.2
+austria-2-liga,Over 2.5 FT,2548,56.9,odd_2 1.75-1.80,25.6,odd_fav 2.35-2.40,17.6,109,68.8
+austria-2-liga,Over 3.5 FT,2548,35.7,odd_dog 4.20-4.25,38.1,odd_x 4.00-4.05,25.4,89,51.7
+austria-2-liga,BTTS Sì,2548,55.8,odd_2 1.75-1.80,38.9,odd_fav 1.75-1.80,5.7,104,64.4
+austria-2-liga,Vittoria 1,2548,42.0,odd_2 1.80-1.85,30.8,odd_1 2.15-2.20,13.3,85,51.8
+austria-2-liga,Pareggio X,2548,23.5,odd_2 2.30-2.35,43.5,odd_dog 3.55-3.60,25.0,108,35.2
+austria-2-liga,Vittoria 2,2548,34.5,odd_1 1.30-1.35,59.2,odd_fav 1.70-1.75,23.7,107,40.2
+austria-bundesliga,Over 0.5 HT (gol 1° tempo),2453,70.6,spread_fav_dog 1.65-1.70,17.3,odd_dog 3.60-3.65,10.4,135,80.0
+austria-bundesliga,Over 0.5 2T (gol 2° tempo),2453,82.0,odd_x 4.25-4.30,19.7,odd_fav 1.50-1.55,12.8,84,88.1
+austria-bundesliga,Over 1.5 2T (2+ gol 2° tempo),2453,49.3,odd_dog 6.00-6.05,49.0,odd_fav 1.55-1.60,14.3,90,54.4
+austria-bundesliga,Over 1.5 FT,2453,79.0,odd_1 2.85-2.90,14.8,odd_fav 1.55-1.60,8.3,90,86.7
+austria-bundesliga,Over 2.5 FT,2453,55.3,odd_2 2.15-2.20,35.2,odd_fav 1.50-1.55,7.3,84,63.1
+austria-bundesliga,Over 3.5 FT,2453,33.2,odd_2 2.30-2.35,34.9,odd_dog 3.60-3.65,17.1,135,41.5
+austria-bundesliga,BTTS Sì,2453,54.4,odd_fav 1.50-1.55,21.3,odd_fav 1.50-1.55,21.3,84,69.0
+austria-bundesliga,Vittoria 1,2453,42.1,odd_2 3.05-3.10,25.9,odd_fav 1.60-1.65,10.6,107,53.3
+austria-bundesliga,Pareggio X,2453,25.0,odd_1 2.60-2.65,46.6,odd_fav 2.20-2.25,30.5,85,37.6
+austria-bundesliga,Vittoria 2,2453,32.9,odd_1 1.55-1.60,69.2,odd_fav 1.55-1.60,50.4,90,40.0
+belgium-first-division-b,Over 0.5 HT (gol 1° tempo),2148,70.3,odd_2 2.25-2.30,24.6,odd_x 3.65-3.70,10.7,96,80.2
+belgium-first-division-b,Over 0.5 2T (gol 2° tempo),2148,80.3,spread_fav_dog 1.85-1.90,16.7,odd_fav 1.95-2.00,13.8,90,88.9
+belgium-first-division-b,Over 1.5 2T (2+ gol 2° tempo),2148,49.3,odd_2 1.95-2.00,42.1,odd_fav 2.00-2.05,23.0,99,58.6
+belgium-first-division-b,Over 1.5 FT,2148,77.2,spread_fav_dog 1.85-1.90,18.5,odd_fav 1.85-1.90,10.8,94,88.3
+belgium-first-division-b,Over 2.5 FT,2148,54.4,odd_1 2.65-2.70,30.2,odd_dog 3.35-3.40,13.8,85,63.5
+belgium-first-division-b,Over 3.5 FT,2148,31.4,odd_1 2.65-2.70,32.3,odd_fav 1.95-2.00,6.2,90,38.9
+belgium-first-division-b,BTTS Sì,2148,54.7,odd_2 2.35-2.40,24.3,odd_fav 2.00-2.05,12.9,99,67.7
+belgium-first-division-b,Vittoria 1,2148,41.1,odd_dog 4.30-4.35,33.6,odd_fav 1.65-1.70,23.9,80,56.2
+belgium-first-division-b,Pareggio X,2148,25.0,odd_fav 2.55-2.60,57.2,odd_x 3.75-3.80,21.0,87,32.2
+belgium-first-division-b,Vittoria 2,2148,33.9,odd_dog 4.40-4.45,55.8,odd_x 3.30-3.35,23.1,130,45.4
+belgium-pro-league,Over 0.5 HT (gol 1° tempo),3233,71.9,odd_2 1.60-1.65,20.7,odd_fav 1.30-1.35,15.9,81,84.0
+belgium-pro-league,Over 0.5 2T (gol 2° tempo),3233,80.9,spread_fav_dog 2.00-2.05,20.7,odd_1 1.60-1.65,12.8,118,88.1
+belgium-pro-league,Over 1.5 2T (2+ gol 2° tempo),3233,48.9,odd_1 2.90-2.95,50.9,odd_x 4.00-4.05,23.8,95,58.9
+belgium-pro-league,Over 1.5 FT,3233,78.7,odd_1 2.90-2.95,21.0,odd_1 1.35-1.40,7.3,112,89.3
+belgium-pro-league,Over 2.5 FT,3233,55.8,odd_1 2.90-2.95,32.9,odd_fav 1.30-1.35,13.8,81,71.6
+belgium-pro-league,Over 3.5 FT,3233,32.5,odd_2 1.95-2.00,33.8,odd_dog 3.65-3.70,23.6,109,45.0
+belgium-pro-league,BTTS Sì,3233,56.2,odd_2 2.25-2.30,22.4,spread_fav_dog 1.00-1.05,10.0,116,66.4
+belgium-pro-league,Vittoria 1,3233,44.4,odd_dog 4.50-4.55,33.9,spread_fav_dog 1.40-1.45,27.5,95,51.6
+belgium-pro-league,Pareggio X,3233,24.5,odd_2 3.70-3.75,104.2,odd_fav 1.70-1.75,28.5,124,33.1
+belgium-pro-league,Vittoria 2,3233,31.1,odd_dog 4.20-4.25,43.3,odd_1 1.50-1.55,28.8,89,22.5
+bolivia-lfpb,Over 0.5 HT (gol 1° tempo),3412,73.2,spread_fav_dog 1.50-1.55,18.3,odd_fav 1.20-1.25,14.8,107,83.2
+bolivia-lfpb,Over 0.5 2T (gol 2° tempo),3412,82.2,odd_x 4.25-4.30,20.0,odd_1 1.25-1.30,15.2,100,90.0
+bolivia-lfpb,Over 1.5 2T (2+ gol 2° tempo),3412,51.7,odd_1 1.20-1.25,42.0,odd_1 1.20-1.25,42.0,105,67.6
+bolivia-lfpb,Over 1.5 FT,3412,79.0,odd_x 4.25-4.30,11.5,odd_fav 1.20-1.25,8.1,107,94.4
+bolivia-lfpb,Over 2.5 FT,3412,57.6,odd_x 4.25-4.30,29.6,odd_1 1.25-1.30,17.0,100,73.0
+bolivia-lfpb,Over 3.5 FT,3412,35.3,odd_x 4.25-4.30,41.9,odd_1 1.25-1.30,16.2,100,49.0
+bolivia-lfpb,BTTS Sì,3412,55.2,odd_2 3.70-3.75,26.8,odd_fav 1.65-1.70,9.2,156,64.7
+bolivia-lfpb,Vittoria 1,3412,55.4,odd_dog 4.10-4.15,44.8,odd_fav 1.40-1.45,19.9,133,72.2
+bolivia-lfpb,Pareggio X,3412,21.7,odd_2 2.70-2.75,43.5,spread_fav_dog 1.00-1.05,25.6,94,37.2
+bolivia-lfpb,Vittoria 2,3412,22.9,odd_2 3.00-3.05,71.7,odd_fav 1.85-1.90,15.9,87,37.9
+brazil-serie-a,Over 0.5 HT (gol 1° tempo),4895,65.8,odd_2 3.80-3.85,14.5,odd_1 1.40-1.45,9.5,121,79.3
+brazil-serie-a,Over 0.5 2T (gol 2° tempo),4895,74.6,odd_2 4.25-4.30,13.4,odd_1 1.35-1.40,10.0,121,86.0
+brazil-serie-a,Over 1.5 2T (2+ gol 2° tempo),4895,37.8,odd_2 4.25-4.30,20.0,odd_1 1.35-1.40,4.1,121,49.6
+brazil-serie-a,Over 1.5 FT,4895,68.4,odd_dog 5.25-5.30,17.2,odd_1 1.40-1.45,10.5,121,84.3
+brazil-serie-a,Over 2.5 FT,4895,43.1,spread_fav_dog 3.55-3.60,34.6,odd_1 1.85-1.90,7.0,117,51.3
+brazil-serie-a,Over 3.5 FT,4895,20.6,odd_2 4.55-4.60,19.3,odd_dog 3.00-3.05,7.9,92,22.8
+brazil-serie-a,BTTS Sì,4895,47.4,odd_x 4.30-4.35,24.6,odd_fav 2.65-2.70,9.4,99,57.6
+brazil-serie-a,Vittoria 1,4895,48.5,odd_1 3.35-3.40,53.0,odd_1 2.55-2.60,29.1,88,50.0
+brazil-serie-a,Pareggio X,4895,26.7,odd_1 3.10-3.15,56.2,odd_fav 2.65-2.70,26.2,99,40.4
+brazil-serie-a,Vittoria 2,4895,24.8,odd_dog 8.00-8.05,122.5,odd_dog 3.55-3.60,20.2,84,39.3
+brazil-serie-b,Over 0.5 HT (gol 1° tempo),4528,63.7,spread_fav_dog 1.75-1.80,12.4,odd_1 1.55-1.60,4.8,137,75.9
+brazil-serie-b,Over 0.5 2T (gol 2° tempo),4528,71.4,odd_dog 5.30-5.35,15.2,odd_x 3.70-3.75,13.8,81,88.9
+brazil-serie-b,Over 1.5 2T (2+ gol 2° tempo),4528,35.0,odd_x 3.90-3.95,11.6,odd_x 3.45-3.50,2.3,156,48.7
+brazil-serie-b,Over 1.5 FT,4528,65.6,odd_dog 4.90-4.95,15.4,odd_1 1.40-1.45,10.7,84,82.1
+brazil-serie-b,Over 2.5 FT,4528,39.6,odd_dog 4.35-4.40,36.9,odd_dog 3.80-3.85,15.5,83,50.6
+brazil-serie-b,Over 3.5 FT,4528,18.2,odd_x 3.90-3.95,19.4,odd_x 3.55-3.60,1.2,108,30.6
+brazil-serie-b,BTTS Sì,4528,46.3,spread_fav_dog 2.30-2.35,29.8,odd_1 1.45-1.50,14.1,86,53.5
+brazil-serie-b,Vittoria 1,4528,47.3,odd_1 2.85-2.90,38.2,odd_fav 2.60-2.65,30.5,85,48.2
+brazil-serie-b,Pareggio X,4528,28.6,odd_x 3.95-4.00,47.3,odd_2 3.15-3.20,19.7,80,40.0
+brazil-serie-b,Vittoria 2,4528,24.1,odd_dog 4.90-4.95,58.9,odd_2 3.55-3.60,29.4,86,36.0
+bulgaria-first-league,Over 0.5 HT (gol 1° tempo),1580,66.0,odd_fav 1.85-1.90,10.4,odd_x 3.00-3.05,-3.6,83,69.9
+bulgaria-first-league,Over 0.5 2T (gol 2° tempo),1580,73.0,odd_x 3.60-3.65,8.8,odd_x 3.30-3.35,1.5,82,79.3
+bulgaria-first-league,Over 1.5 2T (2+ gol 2° tempo),1580,38.3,odd_dog 3.15-3.20,21.2,odd_x 3.15-3.20,-4.1,81,45.7
+bulgaria-first-league,Over 1.5 FT,1580,69.2,odd_1 1.65-1.70,12.6,odd_x 3.00-3.05,0.9,83,72.3
+bulgaria-first-league,Over 2.5 FT,1580,43.3,odd_fav 1.85-1.90,23.4,odd_x 3.00-3.05,8.7,83,49.4
+bulgaria-first-league,Over 3.5 FT,1580,23.8,odd_fav 1.40-1.45,26.1,odd_x 3.00-3.05,10.1,83,27.7
+bulgaria-first-league,BTTS Sì,1580,42.9,odd_1 1.25-1.30,15.3,odd_x 3.00-3.05,5.1,83,54.2
+bulgaria-first-league,Vittoria 1,1580,46.5,odd_x 3.35-3.40,34.6,odd_x 3.00-3.05,11.6,83,44.6
+bulgaria-first-league,Pareggio X,1580,24.4,odd_fav 2.30-2.35,47.1,odd_x 3.25-3.30,20.5,81,37.0
+bulgaria-first-league,Vittoria 2,1580,29.1,odd_2 2.15-2.20,9.6,odd_x 3.30-3.35,-2.7,82,37.8
+chile-primera-division,Over 0.5 HT (gol 1° tempo),1965,67.5,odd_fav 2.55-2.60,12.6,odd_x 3.45-3.50,8.1,120,78.3
+chile-primera-division,Over 0.5 2T (gol 2° tempo),1965,78.5,odd_dog 3.55-3.60,14.5,odd_x 3.40-3.45,6.3,183,83.1
+chile-primera-division,Over 1.5 2T (2+ gol 2° tempo),1965,44.7,odd_dog 3.55-3.60,40.0,odd_fav 2.45-2.50,10.3,80,52.5
+chile-primera-division,Over 1.5 FT,1965,73.3,odd_1 2.55-2.60,12.6,odd_fav 1.90-1.95,3.9,131,80.2
+chile-primera-division,Over 2.5 FT,1965,49.5,odd_1 2.55-2.60,36.2,odd_fav 2.15-2.20,9.4,107,56.1
+chile-primera-division,Over 3.5 FT,1965,27.3,spread_fav_dog 1.50-1.55,36.1,odd_fav 2.15-2.20,8.8,107,32.7
+chile-primera-division,BTTS Sì,1965,53.7,odd_1 2.55-2.60,26.6,odd_fav 2.15-2.20,12.3,107,63.6
+chile-primera-division,Vittoria 1,1965,45.0,odd_1 2.40-2.45,40.5,spread_fav_dog 1.00-1.05,19.2,98,49.0
+chile-primera-division,Pareggio X,1965,26.2,spread_fav_dog 1.45-1.50,38.0,odd_fav 2.35-2.40,13.6,118,35.6
+chile-primera-division,Vittoria 2,1965,28.9,odd_dog 3.70-3.75,38.5,odd_dog 3.50-3.55,6.2,82,35.4
+china-chinese-super-league,Over 0.5 HT (gol 1° tempo),2769,72.9,odd_2 1.35-1.40,23.0,odd_fav 1.45-1.50,12.2,107,81.3
+china-chinese-super-league,Over 0.5 2T (gol 2° tempo),2769,79.8,odd_2 1.65-1.70,20.2,odd_fav 1.20-1.25,16.4,88,90.9
+china-chinese-super-league,Over 1.5 2T (2+ gol 2° tempo),2769,48.7,spread_fav_dog 2.00-2.05,44.4,odd_fav 1.20-1.25,40.8,88,67.0
+china-chinese-super-league,Over 1.5 FT,2769,78.7,odd_2 1.65-1.70,11.2,odd_x 3.55-3.60,9.5,91,86.8
+china-chinese-super-league,Over 2.5 FT,2769,56.1,odd_2 1.65-1.70,30.1,odd_fav 1.20-1.25,16.3,88,76.1
+china-chinese-super-league,Over 3.5 FT,2769,32.7,odd_2 2.20-2.25,46.8,odd_fav 1.30-1.35,14.3,104,47.1
+china-chinese-super-league,BTTS Sì,2769,57.0,odd_1 2.50-2.55,26.9,odd_dog 3.30-3.35,18.0,110,68.2
+china-chinese-super-league,Vittoria 1,2769,45.3,odd_2 1.75-1.80,70.2,odd_fav 1.75-1.80,29.3,96,53.1
+china-chinese-super-league,Pareggio X,2769,25.4,odd_2 1.40-1.45,57.1,odd_x 3.55-3.60,40.8,91,39.6
+china-chinese-super-league,Vittoria 2,2769,29.4,odd_1 2.30-2.35,28.4,odd_x 4.00-4.05,22.5,80,38.8
+colombia-categoria-primera-a,Over 0.5 HT (gol 1° tempo),3223,65.4,spread_fav_dog 1.95-2.00,9.8,odd_1 1.55-1.60,2.9,122,74.6
+colombia-categoria-primera-a,Over 0.5 2T (gol 2° tempo),3223,71.0,odd_x 3.90-3.95,15.2,odd_1 1.40-1.45,3.0,92,80.4
+colombia-categoria-primera-a,Over 1.5 2T (2+ gol 2° tempo),3223,34.5,odd_x 4.20-4.25,20.9,odd_1 1.45-1.50,0.6,96,47.9
+colombia-categoria-primera-a,Over 1.5 FT,3223,66.2,odd_2 2.40-2.45,22.7,odd_fav 2.40-2.45,11.8,110,74.5
+colombia-categoria-primera-a,Over 2.5 FT,3223,39.7,spread_fav_dog 1.90-1.95,34.7,odd_1 2.05-2.10,18.0,110,50.0
+colombia-categoria-primera-a,Over 3.5 FT,3223,19.1,spread_fav_dog 1.90-1.95,54.7,odd_1 2.05-2.10,32.1,110,30.0
+colombia-categoria-primera-a,BTTS Sì,3223,47.4,odd_x 4.20-4.25,38.9,odd_x 2.80-2.85,23.1,136,58.1
+colombia-categoria-primera-a,Vittoria 1,3223,46.1,odd_dog 5.25-5.30,23.9,odd_fav 1.70-1.75,18.5,127,64.6
+colombia-categoria-primera-a,Pareggio X,3223,30.0,odd_2 3.90-3.95,52.1,odd_dog 3.30-3.35,41.2,93,47.3
+colombia-categoria-primera-a,Vittoria 2,3223,23.9,odd_2 2.40-2.45,27.6,odd_fav 2.40-2.45,20.7,110,44.5
+croatia-prva-hnl,Over 0.5 HT (gol 1° tempo),1347,66.7,odd_1 1.40-1.45,13.6,odd_x 3.30-3.35,-15.0,86,61.6
+croatia-prva-hnl,Over 0.5 2T (gol 2° tempo),1347,77.4,odd_2 1.90-1.95,13.4,odd_x 3.30-3.35,-6.2,86,73.3
+croatia-prva-hnl,Over 1.5 2T (2+ gol 2° tempo),1347,43.6,odd_1 1.20-1.25,15.0,odd_x 3.30-3.35,-24.3,86,36.0
+croatia-prva-hnl,Over 1.5 FT,1347,72.8,odd_fav 1.60-1.65,13.9,odd_x 3.30-3.35,-8.8,86,69.8
+croatia-prva-hnl,Over 2.5 FT,1347,48.4,odd_1 1.20-1.25,20.0,odd_x 3.30-3.35,-25.5,86,37.2
+croatia-prva-hnl,Over 3.5 FT,1347,26.9,odd_1 1.90-1.95,35.0,odd_x 3.30-3.35,-33.3,86,18.6
+croatia-prva-hnl,BTTS Sì,1347,47.8,odd_fav 1.60-1.65,29.8,odd_x 3.30-3.35,-10.8,86,48.8
+croatia-prva-hnl,Vittoria 1,1347,44.1,odd_fav 2.35-2.40,28.7,odd_x 3.30-3.35,-20.4,86,32.6
+croatia-prva-hnl,Pareggio X,1347,25.3,spread_fav_dog 1.00-1.05,59.9,odd_x 3.30-3.35,11.4,86,33.7
+croatia-prva-hnl,Vittoria 2,1347,30.6,odd_1 1.40-1.45,35.3,odd_x 3.30-3.35,-12.4,86,33.7
+czech-republic-first-league,Over 0.5 HT (gol 1° tempo),2075,70.5,odd_fav 1.25-1.30,17.4,odd_x 3.10-3.15,8.6,94,78.7
+czech-republic-first-league,Over 0.5 2T (gol 2° tempo),2075,78.7,odd_x 3.65-3.70,14.9,odd_fav 1.65-1.70,10.8,82,86.6
+czech-republic-first-league,Over 1.5 2T (2+ gol 2° tempo),2075,44.2,odd_1 1.20-1.25,34.7,odd_fav 1.35-1.40,11.2,85,52.9
+czech-republic-first-league,Over 1.5 FT,2075,75.7,odd_1 1.45-1.50,16.8,odd_x 3.15-3.20,2.8,86,75.6
+czech-republic-first-league,Over 2.5 FT,2075,51.9,odd_dog 3.05-3.10,32.1,odd_fav 1.65-1.70,12.1,82,61.0
+czech-republic-first-league,Over 3.5 FT,2075,29.9,odd_dog 3.75-3.80,47.7,odd_fav 1.60-1.65,23.5,83,38.6
+czech-republic-first-league,BTTS Sì,2075,50.5,odd_2 2.45-2.50,25.1,odd_fav 1.60-1.65,11.2,83,59.0
+czech-republic-first-league,Vittoria 1,2075,46.0,odd_2 2.85-2.90,27.5,odd_fav 1.75-1.80,9.5,96,50.0
+czech-republic-first-league,Pareggio X,2075,24.6,odd_1 2.00-2.05,44.4,odd_dog 3.50-3.55,29.5,92,38.0
+czech-republic-first-league,Vittoria 2,2075,29.4,odd_dog 3.75-3.80,45.1,odd_fav 1.55-1.60,11.1,85,31.8
+denmark-1st-division,Over 0.5 HT (gol 1° tempo),2294,71.3,odd_1 2.90-2.95,20.2,odd_fav 1.90-1.95,10.4,130,80.0
+denmark-1st-division,Over 0.5 2T (gol 2° tempo),2294,80.0,odd_2 3.45-3.50,23.7,odd_fav 2.10-2.15,13.0,111,88.3
+denmark-1st-division,Over 1.5 2T (2+ gol 2° tempo),2294,48.1,odd_2 2.25-2.30,52.3,odd_fav 2.25-2.30,19.7,86,57.0
+denmark-1st-division,Over 1.5 FT,2294,76.8,odd_2 3.65-3.70,19.7,odd_x 3.45-3.50,4.6,146,82.2
+denmark-1st-division,Over 2.5 FT,2294,53.7,odd_2 2.25-2.30,30.5,odd_dog 3.45-3.50,11.7,109,62.4
+denmark-1st-division,Over 3.5 FT,2294,31.9,odd_2 3.65-3.70,53.2,odd_x 3.45-3.50,22.8,146,43.2
+denmark-1st-division,BTTS Sì,2294,53.3,odd_1 2.85-2.90,26.8,odd_fav 1.90-1.95,6.6,130,63.8
+denmark-1st-division,Vittoria 1,2294,41.4,spread_fav_dog 1.05-1.10,48.3,odd_x 3.25-3.30,21.8,100,46.0
+denmark-1st-division,Pareggio X,2294,25.0,odd_2 2.05-2.10,41.9,odd_fav 2.05-2.10,28.8,110,36.4
+denmark-1st-division,Vittoria 2,2294,33.6,spread_fav_dog 1.75-1.80,46.1,odd_fav 1.90-1.95,18.1,130,42.3
+denmark-superliga,Over 0.5 HT (gol 1° tempo),2496,72.9,odd_dog 5.00-5.05,20.7,odd_fav 1.95-2.00,13.6,102,82.4
+denmark-superliga,Over 0.5 2T (gol 2° tempo),2496,79.0,odd_2 2.40-2.45,18.2,odd_x 3.70-3.75,14.3,112,89.3
+denmark-superliga,Over 1.5 2T (2+ gol 2° tempo),2496,45.8,odd_1 2.70-2.75,36.2,odd_x 3.70-3.75,27.5,112,60.7
+denmark-superliga,Over 1.5 FT,2496,77.3,odd_1 1.85-1.90,14.0,odd_x 3.70-3.75,9.1,112,85.7
+denmark-superliga,Over 2.5 FT,2496,53.0,odd_2 3.45-3.50,32.2,odd_fav 1.95-2.00,8.8,102,60.8
+denmark-superliga,Over 3.5 FT,2496,31.0,odd_2 2.40-2.45,56.4,odd_dog 3.70-3.75,16.5,82,42.7
+denmark-superliga,BTTS Sì,2496,55.8,odd_2 2.40-2.45,24.5,odd_fav 1.95-2.00,10.5,102,64.7
+denmark-superliga,Vittoria 1,2496,43.3,odd_2 2.50-2.55,51.6,odd_dog 3.70-3.75,28.1,82,50.0
+denmark-superliga,Pareggio X,2496,26.2,odd_fav 2.65-2.70,78.1,odd_x 3.25-3.30,22.4,80,37.5
+denmark-superliga,Vittoria 2,2496,30.5,odd_1 1.35-1.40,65.2,odd_fav 1.60-1.65,22.7,97,37.1
+england-premier-league,Over 0.5 HT (gol 1° tempo),5304,71.4,odd_dog 4.05-4.10,23.6,odd_dog 3.65-3.70,10.4,105,80.0
+england-premier-league,Over 0.5 2T (gol 2° tempo),5304,79.3,odd_dog 4.80-4.85,19.8,odd_1 1.30-1.35,15.2,150,90.0
+england-premier-league,Over 1.5 2T (2+ gol 2° tempo),5304,46.2,odd_dog 4.30-4.35,37.5,odd_1 1.35-1.40,30.3,174,62.1
+england-premier-league,Over 1.5 FT,5304,76.9,odd_2 2.40-2.45,17.5,odd_1 1.20-1.25,7.0,130,88.5
+england-premier-league,Over 2.5 FT,5304,53.8,odd_2 2.40-2.45,36.9,odd_2 1.80-1.85,15.0,84,64.3
+england-premier-league,Over 3.5 FT,5304,31.4,odd_2 2.40-2.45,46.2,odd_1 1.30-1.35,18.4,150,46.0
+england-premier-league,BTTS Sì,5304,52.2,odd_dog 4.05-4.10,30.4,odd_2 1.80-1.85,8.3,84,63.1
+england-premier-league,Vittoria 1,5304,44.6,spread_fav_dog 2.90-2.95,71.0,odd_2 1.80-1.85,23.3,84,28.6
+england-premier-league,Pareggio X,5304,23.8,odd_x 3.10-3.15,45.7,odd_dog 3.45-3.50,30.9,142,38.0
+england-premier-league,Vittoria 2,5304,31.6,spread_fav_dog 4.45-4.50,78.1,odd_1 2.30-2.35,31.4,89,41.6
+estonia-meistriliiga,Over 0.5 HT (gol 1° tempo),1308,74.8,odd_1 1.20-1.25,20.3,,,0,
+estonia-meistriliiga,Over 0.5 2T (gol 2° tempo),1308,81.6,odd_dog 3.55-3.60,19.7,,,0,
+estonia-meistriliiga,Over 1.5 2T (2+ gol 2° tempo),1308,49.2,odd_1 1.20-1.25,34.6,,,0,
+estonia-meistriliiga,Over 1.5 FT,1308,79.8,odd_x 3.75-3.80,8.4,,,0,
+estonia-meistriliiga,Over 2.5 FT,1308,59.2,odd_1 1.20-1.25,13.2,,,0,
+estonia-meistriliiga,Over 3.5 FT,1308,36.1,odd_fav 2.05-2.10,32.0,,,0,
+estonia-meistriliiga,BTTS Sì,1308,50.7,odd_x 3.75-3.80,11.7,,,0,
+estonia-meistriliiga,Vittoria 1,1308,41.6,odd_dog 3.30-3.35,29.9,,,0,
+estonia-meistriliiga,Pareggio X,1308,19.8,odd_1 1.25-1.30,54.1,,,0,
+estonia-meistriliiga,Vittoria 2,1308,38.6,odd_dog 3.55-3.60,27.8,,,0,
+fifa-world-cup,Over 0.5 HT (gol 1° tempo),128,60.9,—,0.0,,,0,
+fifa-world-cup,Over 0.5 2T (gol 2° tempo),128,81.2,—,0.0,,,0,
+fifa-world-cup,Over 1.5 2T (2+ gol 2° tempo),128,49.2,—,0.0,,,0,
+fifa-world-cup,Over 1.5 FT,128,74.2,—,0.0,,,0,
+fifa-world-cup,Over 2.5 FT,128,47.7,—,0.0,,,0,
+fifa-world-cup,Over 3.5 FT,128,21.9,—,0.0,,,0,
+fifa-world-cup,BTTS Sì,128,49.2,—,0.0,,,0,
+fifa-world-cup,Vittoria 1,128,43.0,—,0.0,,,0,
+fifa-world-cup,Pareggio X,128,21.9,—,0.0,,,0,
+fifa-world-cup,Vittoria 2,128,35.2,—,0.0,,,0,
+finland-kakkonen,Over 0.5 HT (gol 1° tempo),2940,76.2,odd_1 3.05-3.10,24.2,odd_2 1.90-1.95,17.8,82,85.4
+finland-kakkonen,Over 0.5 2T (gol 2° tempo),2940,85.7,odd_dog 7.00-7.05,24.3,odd_fav 1.20-1.25,17.3,96,91.7
+finland-kakkonen,Over 1.5 2T (2+ gol 2° tempo),2940,58.4,odd_1 2.10-2.15,52.4,odd_dog 4.50-4.55,49.7,94,71.3
+finland-kakkonen,Over 1.5 FT,2940,85.0,odd_1 2.10-2.15,8.2,odd_fav 2.10-2.15,7.5,92,92.4
+finland-kakkonen,Over 2.5 FT,2940,66.3,odd_2 1.70-1.75,15.1,odd_1 1.35-1.40,6.9,121,76.0
+finland-kakkonen,Over 3.5 FT,2940,45.4,odd_1 2.10-2.15,27.2,odd_dog 4.75-4.80,25.8,80,65.0
+finland-kakkonen,BTTS Sì,2940,59.5,odd_1 1.20-1.25,14.0,odd_fav 1.20-1.25,13.0,96,68.8
+finland-kakkonen,Vittoria 1,2940,47.1,odd_1 3.05-3.10,54.9,odd_dog 4.50-4.55,17.8,94,57.4
+finland-kakkonen,Pareggio X,2940,19.2,odd_1 2.45-2.50,40.5,odd_fav 1.20-1.25,14.1,96,20.8
+finland-kakkonen,Vittoria 2,2940,33.7,odd_1 1.55-1.60,40.9,odd_1 1.55-1.60,40.9,84,34.5
+finland-ykkosliiga,Over 0.5 HT (gol 1° tempo),1674,73.4,odd_1 1.45-1.50,25.7,odd_x 3.60-3.65,6.6,110,77.3
+finland-ykkosliiga,Over 0.5 2T (gol 2° tempo),1674,81.1,odd_dog 3.80-3.85,16.7,odd_fav 1.35-1.40,12.0,80,87.5
+finland-ykkosliiga,Over 1.5 2T (2+ gol 2° tempo),1674,52.3,odd_dog 3.25-3.30,38.3,odd_fav 1.35-1.40,28.6,80,61.3
+finland-ykkosliiga,Over 1.5 FT,1674,79.9,odd_1 1.55-1.60,10.8,odd_x 3.70-3.75,2.3,81,82.7
+finland-ykkosliiga,Over 2.5 FT,1674,58.3,odd_1 1.45-1.50,26.8,odd_x 3.70-3.75,3.6,81,60.5
+finland-ykkosliiga,Over 3.5 FT,1674,35.7,odd_1 2.20-2.25,33.1,odd_x 3.70-3.75,8.3,81,40.7
+finland-ykkosliiga,BTTS Sì,1674,55.7,odd_1 1.70-1.75,23.4,odd_x 3.70-3.75,3.9,81,63.0
+finland-ykkosliiga,Vittoria 1,1674,44.6,odd_fav 1.35-1.40,29.3,odd_fav 1.35-1.40,29.3,80,65.0
+finland-ykkosliiga,Pareggio X,1674,23.5,odd_1 2.40-2.45,82.3,odd_dog 3.60-3.65,19.3,87,33.3
+finland-ykkosliiga,Vittoria 2,1674,31.9,odd_1 2.00-2.05,55.8,odd_fav 1.95-2.00,5.0,83,36.1
+france-ligue-2,Over 0.5 HT (gol 1° tempo),4320,65.0,odd_2 2.25-2.30,14.6,odd_1 1.60-1.65,10.1,89,79.8
+france-ligue-2,Over 0.5 2T (gol 2° tempo),4320,73.9,odd_x 3.90-3.95,16.7,odd_2 2.85-2.90,7.9,89,84.3
+france-ligue-2,Over 1.5 2T (2+ gol 2° tempo),4320,40.2,spread_fav_dog 1.80-1.85,25.1,odd_dog 4.00-4.05,5.0,86,50.0
+france-ligue-2,Over 1.5 FT,4320,68.1,odd_2 3.80-3.85,18.8,odd_2 2.85-2.90,6.9,89,76.4
+france-ligue-2,Over 2.5 FT,4320,43.2,odd_2 2.25-2.30,21.9,odd_dog 3.60-3.65,14.2,95,54.7
+france-ligue-2,Over 3.5 FT,4320,22.9,spread_fav_dog 2.05-2.10,27.8,odd_2 2.75-2.80,18.8,91,31.9
+france-ligue-2,BTTS Sì,4320,48.1,odd_2 3.80-3.85,23.4,spread_fav_dog 1.20-1.25,7.6,89,57.3
+france-ligue-2,Vittoria 1,4320,42.1,spread_fav_dog 1.65-1.70,31.1,odd_dog 4.00-4.05,28.0,86,53.5
+france-ligue-2,Pareggio X,4320,29.1,odd_dog 5.00-5.05,35.4,odd_2 3.25-3.30,21.3,97,39.2
+france-ligue-2,Vittoria 2,4320,28.8,odd_1 1.50-1.55,58.9,odd_dog 4.10-4.15,19.3,80,35.0
+germany-bundesliga,Over 0.5 HT (gol 1° tempo),3858,74.8,odd_1 3.05-3.10,27.1,odd_fav 1.30-1.35,17.4,107,85.0
+germany-bundesliga,Over 0.5 2T (gol 2° tempo),3858,81.6,odd_dog 6.00-6.05,24.4,odd_1 2.35-2.40,13.8,81,88.9
+germany-bundesliga,Over 1.5 2T (2+ gol 2° tempo),3858,51.5,odd_2 1.60-1.65,62.0,odd_fav 1.40-1.45,35.9,102,64.7
+germany-bundesliga,Over 1.5 FT,3858,81.5,odd_dog 6.00-6.05,16.6,odd_1 1.95-2.00,12.8,97,89.7
+germany-bundesliga,Over 2.5 FT,3858,58.4,odd_x 4.15-4.20,35.0,odd_1 1.95-2.00,18.9,97,67.0
+germany-bundesliga,Over 3.5 FT,3858,37.0,odd_dog 7.00-7.05,63.1,odd_dog 3.90-3.95,25.5,81,49.4
+germany-bundesliga,BTTS Sì,3858,58.1,odd_dog 6.00-6.05,36.4,odd_1 1.95-2.00,14.0,97,68.0
+germany-bundesliga,Vittoria 1,3858,44.2,odd_2 1.50-1.55,56.9,odd_fav 1.50-1.55,16.1,133,56.4
+germany-bundesliga,Pareggio X,3858,25.3,spread_fav_dog 2.30-2.35,54.4,spread_fav_dog 1.40-1.45,31.9,83,36.1
+germany-bundesliga,Vittoria 2,3858,30.5,spread_fav_dog 1.95-2.00,46.7,odd_1 1.85-1.90,39.2,83,33.7
+italy-serie-a,Over 0.5 HT (gol 1° tempo),4933,70.2,odd_dog 6.50-6.55,20.3,odd_1 1.65-1.70,8.4,98,78.6
+italy-serie-a,Over 0.5 2T (gol 2° tempo),4933,79.6,odd_dog 5.10-5.15,20.7,odd_fav 1.20-1.25,17.1,106,91.5
+italy-serie-a,Over 1.5 2T (2+ gol 2° tempo),4933,45.9,odd_2 4.15-4.20,31.3,odd_fav 1.20-1.25,16.9,106,55.7
+italy-serie-a,Over 1.5 FT,4933,76.1,odd_2 4.15-4.20,14.0,odd_fav 2.35-2.40,6.8,155,81.3
+italy-serie-a,Over 2.5 FT,4933,51.8,spread_fav_dog 4.40-4.45,30.2,odd_x 3.55-3.60,13.1,178,61.8
+italy-serie-a,Over 3.5 FT,4933,28.8,odd_dog 4.55-4.60,38.4,odd_dog 3.60-3.65,14.7,140,37.1
+italy-serie-a,BTTS Sì,4933,53.5,odd_2 3.60-3.65,25.6,odd_dog 3.60-3.65,16.9,140,67.9
+italy-serie-a,Vittoria 1,4933,42.6,spread_fav_dog 3.00-3.05,59.5,odd_dog 3.40-3.45,9.6,173,42.2
+italy-serie-a,Pareggio X,4933,25.8,spread_fav_dog 2.95-3.00,59.1,odd_1 2.10-2.15,29.1,126,38.1
+italy-serie-a,Vittoria 2,4933,31.6,spread_fav_dog 3.40-3.45,56.2,odd_1 1.45-1.50,35.4,128,19.5
+lithuania-a-lyga,Over 0.5 HT (gol 1° tempo),1176,66.7,odd_dog 3.30-3.35,15.5,,,0,
+lithuania-a-lyga,Over 0.5 2T (gol 2° tempo),1176,77.6,odd_fav 1.50-1.55,19.5,,,0,
+lithuania-a-lyga,Over 1.5 2T (2+ gol 2° tempo),1176,44.9,odd_fav 2.15-2.20,20.8,,,0,
+lithuania-a-lyga,Over 1.5 FT,1176,73.3,odd_fav 2.10-2.15,21.8,,,0,
+lithuania-a-lyga,Over 2.5 FT,1176,49.1,odd_dog 3.15-3.20,18.8,,,0,
+lithuania-a-lyga,Over 3.5 FT,1176,27.3,odd_fav 1.70-1.75,21.9,,,0,
+lithuania-a-lyga,BTTS Sì,1176,46.0,odd_2 1.60-1.65,24.9,,,0,
+lithuania-a-lyga,Vittoria 1,1176,41.0,odd_fav 1.65-1.70,42.6,,,0,
+lithuania-a-lyga,Pareggio X,1176,23.8,odd_fav 1.55-1.60,134.5,,,0,
+lithuania-a-lyga,Vittoria 2,1176,35.2,odd_fav 1.50-1.55,28.9,,,0,
+netherlands-eredivisie,Over 0.5 HT (gol 1° tempo),3930,75.1,odd_dog 4.25-4.30,24.2,odd_x 4.10-4.15,16.0,88,84.1
+netherlands-eredivisie,Over 0.5 2T (gol 2° tempo),3930,84.1,odd_dog 3.95-4.00,22.8,spread_fav_dog 1.55-1.60,16.9,81,91.4
+netherlands-eredivisie,Over 1.5 2T (2+ gol 2° tempo),3930,52.6,spread_fav_dog 2.30-2.35,49.0,odd_fav 1.20-1.25,30.8,114,62.3
+netherlands-eredivisie,Over 1.5 FT,3930,82.8,odd_dog 4.60-4.65,17.1,odd_fav 1.60-1.65,10.8,174,90.8
+netherlands-eredivisie,Over 2.5 FT,3930,59.7,odd_x 4.35-4.40,29.3,odd_1 1.25-1.30,21.1,113,76.1
+netherlands-eredivisie,Over 3.5 FT,3930,37.8,spread_fav_dog 2.30-2.35,51.6,odd_x 3.90-3.95,25.6,127,48.8
+netherlands-eredivisie,BTTS Sì,3930,57.5,odd_dog 4.60-4.65,28.3,odd_x 4.00-4.05,23.5,97,74.2
+netherlands-eredivisie,Vittoria 1,3930,45.6,odd_1 2.80-2.85,41.7,odd_dog 3.45-3.50,14.9,96,43.8
+netherlands-eredivisie,Pareggio X,3930,23.7,odd_2 3.95-4.00,67.0,odd_1 1.30-1.35,53.8,101,26.7
+netherlands-eredivisie,Vittoria 2,3930,30.6,odd_dog 4.05-4.10,57.0,odd_1 1.95-2.00,18.1,80,32.5
+poland-1-liga,Over 0.5 HT (gol 1° tempo),2288,68.7,odd_x 4.00-4.05,19.8,spread_fav_dog 1.10-1.15,6.3,109,77.1
+poland-1-liga,Over 0.5 2T (gol 2° tempo),2288,76.9,odd_2 3.95-4.00,13.4,odd_1 1.90-1.95,9.9,120,85.8
+poland-1-liga,Over 1.5 2T (2+ gol 2° tempo),2288,41.9,spread_fav_dog 1.45-1.50,25.0,odd_1 1.95-2.00,5.0,90,50.0
+poland-1-liga,Over 1.5 FT,2288,72.4,odd_2 3.75-3.80,13.1,odd_fav 1.70-1.75,3.6,98,80.6
+poland-1-liga,Over 2.5 FT,2288,47.3,spread_fav_dog 1.45-1.50,31.5,odd_x 3.35-3.40,8.4,83,55.4
+poland-1-liga,Over 3.5 FT,2288,25.2,odd_2 4.70-4.75,21.1,odd_dog 3.40-3.45,10.2,141,34.8
+poland-1-liga,BTTS Sì,2288,49.8,odd_2 2.60-2.65,17.8,odd_x 3.05-3.10,4.4,89,53.9
+poland-1-liga,Vittoria 1,2288,41.5,spread_fav_dog 1.65-1.70,37.6,odd_x 3.35-3.40,10.4,83,50.6
+poland-1-liga,Pareggio X,2288,27.2,odd_2 2.45-2.50,32.2,odd_fav 2.45-2.50,17.0,107,37.4
+poland-1-liga,Vittoria 2,2288,31.3,odd_dog 5.00-5.05,98.9,odd_x 3.60-3.65,23.3,103,35.0
+poland-ekstraklasa,Over 0.5 HT (gol 1° tempo),3314,69.7,odd_x 4.10-4.15,26.2,odd_1 1.80-1.85,7.6,109,78.0
+poland-ekstraklasa,Over 0.5 2T (gol 2° tempo),3314,77.6,odd_2 3.35-3.40,18.2,odd_2 2.45-2.50,9.0,81,85.2
+poland-ekstraklasa,Over 1.5 2T (2+ gol 2° tempo),3314,43.9,odd_2 3.60-3.65,24.9,odd_1 2.10-2.15,15.5,140,55.0
+poland-ekstraklasa,Over 1.5 FT,3314,74.5,odd_x 3.90-3.95,19.0,odd_2 2.45-2.50,10.0,81,84.0
+poland-ekstraklasa,Over 2.5 FT,3314,48.9,odd_x 4.10-4.15,31.9,odd_dog 3.60-3.65,18.5,113,62.8
+poland-ekstraklasa,Over 3.5 FT,3314,27.8,odd_2 4.70-4.75,34.0,odd_2 2.45-2.50,31.7,81,40.7
+poland-ekstraklasa,BTTS Sì,3314,52.7,odd_2 3.60-3.65,30.3,odd_1 2.00-2.05,8.1,120,60.8
+poland-ekstraklasa,Vittoria 1,3314,44.1,odd_dog 3.85-3.90,50.4,odd_dog 3.50-3.55,21.8,140,49.3
+poland-ekstraklasa,Pareggio X,3314,27.4,odd_dog 3.95-4.00,42.3,odd_fav 1.55-1.60,37.0,81,34.6
+poland-ekstraklasa,Vittoria 2,3314,28.5,odd_x 4.10-4.15,63.1,odd_1 1.85-1.90,20.6,82,28.0
+portugal-liga-nos,Over 0.5 HT (gol 1° tempo),3846,69.2,odd_x 4.00-4.05,17.4,odd_1 1.20-1.25,10.6,126,80.2
+portugal-liga-nos,Over 0.5 2T (gol 2° tempo),3846,77.0,odd_1 2.80-2.85,15.2,odd_1 1.25-1.30,14.1,83,89.2
+portugal-liga-nos,Over 1.5 2T (2+ gol 2° tempo),3846,41.5,odd_1 1.35-1.40,31.6,odd_1 1.25-1.30,18.9,83,56.6
+portugal-liga-nos,Over 1.5 FT,3846,72.0,odd_2 3.40-3.45,14.2,odd_1 1.20-1.25,9.9,126,90.5
+portugal-liga-nos,Over 2.5 FT,3846,48.1,odd_2 2.70-2.75,32.5,odd_1 1.20-1.25,12.4,126,67.5
+portugal-liga-nos,Over 3.5 FT,3846,26.5,odd_x 4.40-4.45,33.1,odd_fav 1.80-1.85,15.4,100,35.0
+portugal-liga-nos,BTTS Sì,3846,47.8,odd_dog 7.00-7.05,29.7,odd_1 2.05-2.10,15.1,116,61.2
+portugal-liga-nos,Vittoria 1,3846,44.3,odd_fav 2.70-2.75,53.3,odd_2 1.35-1.40,14.3,104,13.5
+portugal-liga-nos,Pareggio X,3846,24.4,odd_1 1.50-1.55,58.8,odd_x 3.05-3.10,33.3,108,43.5
+portugal-liga-nos,Vittoria 2,3846,31.3,odd_x 4.10-4.15,44.5,odd_fav 2.30-2.35,19.2,117,41.0
+republic-of-ireland-first-division,Over 0.5 HT (gol 1° tempo),1199,71.1,odd_fav 1.25-1.30,17.8,odd_x 3.30-3.35,3.1,83,74.7
+republic-of-ireland-first-division,Over 0.5 2T (gol 2° tempo),1199,79.3,odd_fav 1.20-1.25,15.2,odd_x 3.30-3.35,4.9,83,81.9
+republic-of-ireland-first-division,Over 1.5 2T (2+ gol 2° tempo),1199,48.1,odd_1 1.30-1.35,33.0,odd_x 3.30-3.35,6.3,83,50.6
+republic-of-ireland-first-division,Over 1.5 FT,1199,76.1,odd_fav 2.20-2.25,17.0,odd_x 3.30-3.35,4.1,83,81.9
+republic-of-ireland-first-division,Over 2.5 FT,1199,54.3,odd_fav 2.20-2.25,26.0,odd_x 3.30-3.35,18.0,83,63.9
+republic-of-ireland-first-division,Over 3.5 FT,1199,32.8,odd_1 1.30-1.35,32.4,odd_x 3.30-3.35,16.4,83,37.3
+republic-of-ireland-first-division,BTTS Sì,1199,52.0,odd_1 1.30-1.35,25.9,odd_x 3.30-3.35,7.2,83,62.7
+republic-of-ireland-first-division,Vittoria 1,1199,41.7,odd_fav 2.35-2.40,23.7,odd_x 3.50-3.55,-3.8,83,41.0
+republic-of-ireland-first-division,Pareggio X,1199,23.7,odd_fav 1.70-1.75,53.6,odd_x 3.40-3.45,2.6,83,30.1
+republic-of-ireland-first-division,Vittoria 2,1199,34.6,odd_1 1.90-1.95,31.8,odd_x 3.30-3.35,9.3,83,42.2
+republic-of-ireland-premier-division,Over 0.5 HT (gol 1° tempo),2281,69.5,odd_dog 4.00-4.05,26.2,odd_fav 1.95-2.00,7.8,96,78.1
+republic-of-ireland-premier-division,Over 0.5 2T (gol 2° tempo),2281,75.7,odd_1 1.35-1.40,12.6,odd_1 1.35-1.40,12.6,83,88.0
+republic-of-ireland-premier-division,Over 1.5 2T (2+ gol 2° tempo),2281,41.4,odd_1 2.35-2.40,40.0,odd_fav 1.40-1.45,12.7,82,53.7
+republic-of-ireland-premier-division,Over 1.5 FT,2281,72.3,odd_1 2.05-2.10,17.3,odd_1 1.35-1.40,11.4,83,86.7
+republic-of-ireland-premier-division,Over 2.5 FT,2281,47.4,odd_1 1.20-1.25,23.2,odd_fav 1.75-1.80,3.7,89,51.7
+republic-of-ireland-premier-division,Over 3.5 FT,2281,25.0,odd_1 1.20-1.25,37.0,odd_fav 1.30-1.35,-5.1,81,34.6
+republic-of-ireland-premier-division,BTTS Sì,2281,45.9,spread_fav_dog 1.20-1.25,29.6,odd_fav 1.70-1.75,7.3,106,55.7
+republic-of-ireland-premier-division,Vittoria 1,2281,43.8,odd_2 2.15-2.20,61.4,odd_fav 2.10-2.15,38.8,83,51.8
+republic-of-ireland-premier-division,Pareggio X,2281,24.2,odd_2 2.45-2.50,58.5,odd_1 1.35-1.40,47.2,83,31.3
+republic-of-ireland-premier-division,Vittoria 2,2281,32.0,odd_1 2.40-2.45,40.6,odd_fav 1.55-1.60,16.7,106,34.9
+south-korea-k-league-1,Over 0.5 HT (gol 1° tempo),1740,62.4,odd_fav 1.55-1.60,5.8,odd_dog 3.35-3.40,-5.8,85,68.2
+south-korea-k-league-1,Over 0.5 2T (gol 2° tempo),1740,79.0,odd_1 2.95-3.00,19.5,odd_fav 1.90-1.95,10.9,112,86.6
+south-korea-k-league-1,Over 1.5 2T (2+ gol 2° tempo),1740,48.1,odd_1 2.95-3.00,47.0,odd_dog 3.35-3.40,30.9,85,62.4
+south-korea-k-league-1,Over 1.5 FT,1740,72.0,odd_dog 3.75-3.80,12.9,odd_dog 3.35-3.40,4.0,85,80.0
+south-korea-k-league-1,Over 2.5 FT,1740,47.9,odd_1 2.50-2.55,33.4,odd_x 3.00-3.05,13.5,87,51.7
+south-korea-k-league-1,Over 3.5 FT,1740,26.3,odd_1 2.70-2.75,34.7,odd_x 3.00-3.05,24.2,87,29.9
+south-korea-k-league-1,BTTS Sì,1740,54.1,odd_dog 4.20-4.25,30.5,odd_fav 1.90-1.95,15.4,112,63.4
+south-korea-k-league-1,Vittoria 1,1740,40.1,odd_2 2.65-2.70,30.5,odd_dog 3.15-3.20,8.9,82,42.7
+south-korea-k-league-1,Pareggio X,1740,27.9,odd_fav 1.65-1.70,50.7,odd_fav 2.30-2.35,16.6,94,36.2
+south-korea-k-league-1,Vittoria 2,1740,32.0,spread_fav_dog 1.55-1.60,24.7,odd_fav 2.10-2.15,18.3,93,44.1
+south-korea-k-league-2,Over 0.5 HT (gol 1° tempo),1622,63.1,odd_2 2.25-2.30,10.4,odd_fav 1.95-2.00,1.9,107,73.8
+south-korea-k-league-2,Over 0.5 2T (gol 2° tempo),1622,77.8,odd_1 1.65-1.70,17.9,odd_fav 2.15-2.20,3.8,106,81.1
+south-korea-k-league-2,Over 1.5 2T (2+ gol 2° tempo),1622,44.7,odd_1 1.65-1.70,38.2,odd_fav 2.25-2.30,8.8,83,51.8
+south-korea-k-league-2,Over 1.5 FT,1622,71.1,odd_2 2.25-2.30,25.1,odd_fav 2.25-2.30,5.8,83,78.3
+south-korea-k-league-2,Over 2.5 FT,1622,47.1,odd_2 2.25-2.30,64.8,odd_fav 2.25-2.30,20.0,83,57.8
+south-korea-k-league-2,Over 3.5 FT,1622,25.0,odd_x 3.55-3.60,40.4,odd_fav 1.95-2.00,12.6,107,31.8
+south-korea-k-league-2,BTTS Sì,1622,51.7,odd_2 2.25-2.30,58.7,odd_fav 2.25-2.30,24.3,83,67.5
+south-korea-k-league-2,Vittoria 1,1622,36.8,odd_2 1.85-1.90,55.8,odd_fav 1.90-1.95,0.4,93,41.9
+south-korea-k-league-2,Pareggio X,1622,27.7,spread_fav_dog 1.25-1.30,53.5,odd_fav 1.70-1.75,17.5,80,33.8
+south-korea-k-league-2,Vittoria 2,1622,35.5,spread_fav_dog 1.30-1.35,54.4,odd_fav 1.70-1.75,36.7,80,41.2
+spain-la-liga,Over 0.5 HT (gol 1° tempo),5292,68.3,odd_2 1.30-1.35,23.0,odd_1 2.40-2.45,9.6,102,79.4
+spain-la-liga,Over 0.5 2T (gol 2° tempo),5292,78.0,odd_2 4.20-4.25,19.7,odd_1 2.05-2.10,13.3,157,88.5
+spain-la-liga,Over 1.5 2T (2+ gol 2° tempo),5292,44.1,odd_2 1.40-1.45,35.9,odd_x 3.65-3.70,19.4,139,56.8
+spain-la-liga,Over 1.5 FT,5292,73.5,spread_fav_dog 3.30-3.35,20.5,odd_dog 3.10-3.15,8.8,99,74.7
+spain-la-liga,Over 2.5 FT,5292,49.0,spread_fav_dog 3.30-3.35,40.7,odd_1 1.55-1.60,12.6,115,60.0
+spain-la-liga,Over 3.5 FT,5292,27.0,spread_fav_dog 3.25-3.30,55.7,odd_1 1.65-1.70,12.3,139,34.5
+spain-la-liga,BTTS Sì,5292,50.9,spread_fav_dog 3.30-3.35,37.1,odd_dog 3.10-3.15,17.7,99,59.6
+spain-la-liga,Vittoria 1,5292,46.1,odd_dog 8.00-8.05,67.5,odd_fav 1.35-1.40,24.7,159,65.4
+spain-la-liga,Pareggio X,5292,25.4,odd_2 1.20-1.25,45.6,odd_dog 3.35-3.40,32.9,168,39.9
+spain-la-liga,Vittoria 2,5292,28.6,odd_2 3.80-3.85,41.2,odd_dog 4.00-4.05,27.9,98,39.8
+spain-segunda-division,Over 0.5 HT (gol 1° tempo),5534,64.1,odd_1 1.45-1.50,20.7,spread_fav_dog 1.85-1.90,5.2,80,76.2
+spain-segunda-division,Over 0.5 2T (gol 2° tempo),5534,74.1,odd_dog 4.45-4.50,13.8,odd_2 3.45-3.50,5.1,112,82.1
+spain-segunda-division,Over 1.5 2T (2+ gol 2° tempo),5534,39.7,odd_x 3.65-3.70,23.8,odd_2 3.05-3.10,-0.5,133,47.4
+spain-segunda-division,Over 1.5 FT,5534,68.1,odd_2 2.20-2.25,13.7,spread_fav_dog 1.30-1.35,5.6,87,77.0
+spain-segunda-division,Over 2.5 FT,5534,42.2,odd_1 1.45-1.50,25.7,odd_1 2.70-2.75,3.6,94,47.9
+spain-segunda-division,Over 3.5 FT,5534,22.1,odd_dog 6.00-6.05,48.6,odd_2 2.60-2.65,3.3,81,27.2
+spain-segunda-division,BTTS Sì,5534,48.8,odd_2 2.20-2.25,23.6,odd_x 2.85-2.90,8.2,140,51.4
+spain-segunda-division,Vittoria 1,5534,45.4,odd_2 2.50-2.55,35.9,spread_fav_dog 1.50-1.55,26.1,90,54.4
+spain-segunda-division,Pareggio X,5534,29.5,odd_1 3.10-3.15,57.9,odd_dog 3.60-3.65,30.6,122,41.0
+spain-segunda-division,Vittoria 2,5534,25.2,spread_fav_dog 2.45-2.50,34.9,odd_2 3.40-3.45,13.3,97,33.0
+sweden-allsvenskan,Over 0.5 HT (gol 1° tempo),2874,70.9,odd_1 1.20-1.25,24.2,odd_1 1.75-1.80,7.0,98,77.6
+sweden-allsvenskan,Over 0.5 2T (gol 2° tempo),2874,80.9,odd_2 2.20-2.25,19.7,odd_fav 1.50-1.55,12.9,93,88.2
+sweden-allsvenskan,Over 1.5 2T (2+ gol 2° tempo),2874,46.4,odd_1 2.20-2.25,31.3,odd_fav 1.50-1.55,19.7,93,57.0
+sweden-allsvenskan,Over 1.5 FT,2874,77.8,odd_1 2.20-2.25,17.1,odd_dog 3.55-3.60,8.3,111,84.7
+sweden-allsvenskan,Over 2.5 FT,2874,54.3,odd_1 2.20-2.25,31.7,odd_1 1.35-1.40,16.2,92,67.4
+sweden-allsvenskan,Over 3.5 FT,2874,30.4,odd_x 4.15-4.20,31.7,odd_1 1.35-1.40,12.1,92,42.4
+sweden-allsvenskan,BTTS Sì,2874,54.3,odd_2 2.75-2.80,35.2,odd_1 1.75-1.80,14.9,98,66.3
+sweden-allsvenskan,Vittoria 1,2874,43.8,odd_dog 5.50-5.55,42.3,odd_fav 1.55-1.60,9.2,108,54.6
+sweden-allsvenskan,Pareggio X,2874,24.5,odd_2 3.20-3.25,69.0,odd_x 3.35-3.40,26.3,101,37.6
+sweden-allsvenskan,Vittoria 2,2874,31.7,odd_1 2.65-2.70,45.8,odd_1 1.45-1.50,22.7,82,18.3
+sweden-superettan,Over 0.5 HT (gol 1° tempo),2871,70.3,odd_2 3.10-3.15,18.3,odd_1 2.10-2.15,7.9,87,78.2
+sweden-superettan,Over 0.5 2T (gol 2° tempo),2871,78.6,odd_1 1.35-1.40,15.9,odd_fav 1.75-1.80,11.5,101,87.1
+sweden-superettan,Over 1.5 2T (2+ gol 2° tempo),2871,45.9,odd_2 2.10-2.15,44.0,odd_dog 3.65-3.70,26.9,91,60.4
+sweden-superettan,Over 1.5 FT,2871,76.1,odd_x 3.90-3.95,11.8,odd_fav 1.70-1.75,7.0,109,84.4
+sweden-superettan,Over 2.5 FT,2871,52.3,odd_2 3.60-3.65,34.4,odd_1 2.15-2.20,9.5,89,58.4
+sweden-superettan,Over 3.5 FT,2871,30.4,odd_x 3.15-3.20,52.5,odd_1 1.70-1.75,15.9,89,40.4
+sweden-superettan,BTTS Sì,2871,54.6,odd_x 3.15-3.20,20.3,odd_fav 2.35-2.40,12.4,168,66.7
+sweden-superettan,Vittoria 1,2871,44.0,odd_1 2.80-2.85,45.9,spread_fav_dog 1.10-1.15,16.5,106,46.2
+sweden-superettan,Pareggio X,2871,26.8,odd_dog 4.10-4.15,70.8,odd_1 1.80-1.85,36.4,86,37.2
+sweden-superettan,Vittoria 2,2871,29.2,odd_2 3.90-3.95,46.1,odd_fav 1.65-1.70,35.5,82,34.1
+switzerland-super-league,Over 0.5 HT (gol 1° tempo),2430,73.0,odd_2 3.40-3.45,26.2,odd_fav 2.30-2.35,13.4,84,82.1
+switzerland-super-league,Over 0.5 2T (gol 2° tempo),2430,82.2,odd_2 1.95-2.00,20.7,odd_x 3.90-3.95,13.6,80,88.8
+switzerland-super-league,Over 1.5 2T (2+ gol 2° tempo),2430,52.6,odd_dog 3.90-3.95,49.2,odd_fav 2.15-2.20,32.5,103,63.1
+switzerland-super-league,Over 1.5 FT,2430,80.3,spread_fav_dog 1.85-1.90,13.5,odd_fav 2.15-2.20,10.6,103,89.3
+switzerland-super-league,Over 2.5 FT,2430,57.0,spread_fav_dog 1.85-1.90,25.4,odd_fav 1.60-1.65,13.1,88,67.0
+switzerland-super-league,Over 3.5 FT,2430,36.0,odd_2 2.25-2.30,46.8,odd_fav 2.30-2.35,17.8,84,44.0
+switzerland-super-league,BTTS Sì,2430,58.8,odd_x 3.95-4.00,18.0,odd_dog 3.75-3.80,15.4,106,69.8
+switzerland-super-league,Vittoria 1,2430,43.8,odd_1 2.70-2.75,71.2,odd_x 3.90-3.95,9.8,80,48.8
+switzerland-super-league,Pareggio X,2430,25.8,spread_fav_dog 1.55-1.60,55.8,odd_fav 1.85-1.90,43.0,91,38.5
+switzerland-super-league,Vittoria 2,2430,30.4,odd_x 4.30-4.35,51.8,odd_fav 2.25-2.30,19.7,84,44.0
+turkey-1-lig,Over 0.5 HT (gol 1° tempo),3554,66.6,odd_dog 5.25-5.30,15.7,odd_1 1.50-1.55,4.3,86,75.6
+turkey-1-lig,Over 0.5 2T (gol 2° tempo),3554,77.7,odd_2 2.30-2.35,17.6,odd_dog 3.55-3.60,9.5,83,85.5
+turkey-1-lig,Over 1.5 2T (2+ gol 2° tempo),3554,46.1,odd_x 3.95-4.00,38.0,odd_1 2.15-2.20,14.7,108,54.6
+turkey-1-lig,Over 1.5 FT,3554,73.4,odd_x 3.95-4.00,11.4,odd_fav 2.25-2.30,5.2,149,80.5
+turkey-1-lig,Over 2.5 FT,3554,49.5,odd_x 3.95-4.00,17.5,odd_x 3.60-3.65,9.7,122,60.7
+turkey-1-lig,Over 3.5 FT,3554,27.5,odd_1 2.90-2.95,48.4,odd_fav 1.50-1.55,12.8,100,39.0
+turkey-1-lig,BTTS Sì,3554,50.5,odd_1 3.05-3.10,17.8,odd_1 2.15-2.20,10.9,108,63.0
+turkey-1-lig,Vittoria 1,3554,44.8,spread_fav_dog 1.90-1.95,50.9,odd_1 2.10-2.15,26.8,91,59.3
+turkey-1-lig,Pareggio X,3554,25.4,spread_fav_dog 2.20-2.25,70.1,odd_x 3.50-3.55,26.3,172,36.0
+turkey-1-lig,Vittoria 2,3554,29.9,odd_1 1.25-1.30,105.2,odd_fav 1.55-1.60,16.8,102,34.3
+turkey-super-lig,Over 0.5 HT (gol 1° tempo),3654,71.0,odd_fav 1.20-1.25,24.9,odd_1 1.35-1.40,18.3,98,85.7
+turkey-super-lig,Over 0.5 2T (gol 2° tempo),3654,79.9,odd_x 4.20-4.25,17.3,odd_1 1.45-1.50,13.6,80,88.8
+turkey-super-lig,Over 1.5 2T (2+ gol 2° tempo),3654,47.9,odd_1 2.85-2.90,46.1,odd_fav 1.85-1.90,29.6,94,61.7
+turkey-super-lig,Over 1.5 FT,3654,76.8,odd_2 3.75-3.80,14.4,odd_fav 1.85-1.90,11.6,94,88.3
+turkey-super-lig,Over 2.5 FT,3654,53.3,odd_dog 4.75-4.80,26.9,odd_1 1.35-1.40,21.9,98,74.5
+turkey-super-lig,Over 3.5 FT,3654,31.4,odd_2 2.35-2.40,60.3,odd_1 1.45-1.50,24.1,80,48.8
+turkey-super-lig,BTTS Sì,3654,56.0,spread_fav_dog 1.85-1.90,33.2,odd_1 2.40-2.45,19.2,86,69.8
+turkey-super-lig,Vittoria 1,3654,45.6,odd_2 2.80-2.85,32.3,odd_x 3.85-3.90,30.3,83,59.0
+turkey-super-lig,Pareggio X,3654,25.3,spread_fav_dog 1.85-1.90,80.6,odd_dog 3.65-3.70,28.6,94,36.2
+turkey-super-lig,Vittoria 2,3654,29.1,spread_fav_dog 2.05-2.10,44.1,odd_fav 1.45-1.50,20.0,98,30.6
+ukraine-ukrainian-premier-league,Over 0.5 HT (gol 1° tempo),2420,67.0,odd_2 1.60-1.65,15.7,odd_fav 1.30-1.35,4.2,94,75.5
+ukraine-ukrainian-premier-league,Over 0.5 2T (gol 2° tempo),2420,74.7,odd_2 1.20-1.25,18.6,odd_fav 1.20-1.25,5.1,95,82.1
+ukraine-ukrainian-premier-league,Over 1.5 2T (2+ gol 2° tempo),2420,41.3,odd_fav 1.50-1.55,21.3,odd_fav 1.25-1.30,11.5,113,53.1
+ukraine-ukrainian-premier-league,Over 1.5 FT,2420,70.7,odd_2 1.30-1.35,12.2,odd_fav 1.35-1.40,2.4,98,81.6
+ukraine-ukrainian-premier-league,Over 2.5 FT,2420,45.7,odd_fav 1.50-1.55,23.0,odd_fav 1.30-1.35,5.3,94,60.6
+ukraine-ukrainian-premier-league,Over 3.5 FT,2420,24.6,odd_x 2.95-3.00,41.4,odd_fav 1.40-1.45,13.9,87,40.2
+ukraine-ukrainian-premier-league,BTTS Sì,2420,45.2,odd_2 1.30-1.35,22.1,odd_fav 1.40-1.45,-2.1,87,52.9
+ukraine-ukrainian-premier-league,Vittoria 1,2420,40.3,odd_2 2.55-2.60,29.3,odd_dog 3.25-3.30,4.4,84,40.5
+ukraine-ukrainian-premier-league,Pareggio X,2420,25.8,odd_2 2.30-2.35,64.6,odd_fav 2.00-2.05,43.9,81,44.4
+ukraine-ukrainian-premier-league,Vittoria 2,2420,33.8,odd_2 2.95-3.00,58.9,odd_fav 2.25-2.30,40.1,81,49.4
+uruguay-primera-division,Over 0.5 HT (gol 1° tempo),2234,65.6,odd_1 1.40-1.45,15.6,odd_dog 3.35-3.40,-0.0,98,72.4
+uruguay-primera-division,Over 0.5 2T (gol 2° tempo),2234,76.3,odd_1 1.30-1.35,13.8,odd_x 3.05-3.10,8.7,86,84.9
+uruguay-primera-division,Over 1.5 2T (2+ gol 2° tempo),2234,40.0,odd_1 1.30-1.35,34.2,odd_x 3.05-3.10,0.1,86,47.7
+uruguay-primera-division,Over 1.5 FT,2234,70.0,odd_1 2.95-3.00,21.0,odd_x 3.05-3.10,3.5,86,75.6
+uruguay-primera-division,Over 2.5 FT,2234,44.9,odd_1 1.30-1.35,20.1,odd_x 3.05-3.10,14.6,86,53.5
+uruguay-primera-division,Over 3.5 FT,2234,23.9,spread_fav_dog 1.60-1.65,38.9,odd_x 3.05-3.10,11.3,86,29.1
+uruguay-primera-division,BTTS Sì,2234,49.7,odd_x 3.65-3.70,39.9,odd_fav 2.40-2.45,9.3,101,59.4
+uruguay-primera-division,Vittoria 1,2234,39.6,odd_fav 1.35-1.40,36.1,odd_fav 2.30-2.35,12.5,87,44.8
+uruguay-primera-division,Pareggio X,2234,28.2,odd_dog 3.50-3.55,50.2,odd_dog 3.50-3.55,50.2,83,44.6
+uruguay-primera-division,Vittoria 2,2234,32.2,odd_2 2.05-2.10,43.3,odd_x 3.25-3.30,23.5,171,45.6
+usa-mls,Over 0.5 HT (gol 1° tempo),4950,72.5,odd_1 2.80-2.85,19.2,spread_fav_dog 1.70-1.75,10.7,106,80.2
+usa-mls,Over 0.5 2T (gol 2° tempo),4950,80.7,spread_fav_dog 2.85-2.90,22.7,odd_dog 3.75-3.80,12.1,250,87.6
+usa-mls,Over 1.5 2T (2+ gol 2° tempo),4950,49.9,spread_fav_dog 3.65-3.70,49.0,odd_x 4.20-4.25,26.8,106,60.4
+usa-mls,Over 1.5 FT,4950,78.6,odd_2 4.10-4.15,19.7,odd_x 3.95-4.00,4.2,122,85.2
+usa-mls,Over 2.5 FT,4950,57.3,odd_2 4.60-4.65,32.6,odd_x 3.95-4.00,16.0,122,68.9
+usa-mls,Over 3.5 FT,4950,33.2,spread_fav_dog 2.90-2.95,42.4,odd_x 3.95-4.00,15.8,122,44.3
+usa-mls,BTTS Sì,4950,58.0,odd_dog 4.65-4.70,24.2,odd_x 3.95-4.00,12.4,122,68.0
+usa-mls,Vittoria 1,4950,49.3,odd_fav 2.60-2.65,34.3,spread_fav_dog 2.05-2.10,22.4,83,61.4
+usa-mls,Pareggio X,4950,24.9,odd_2 4.40-4.45,48.0,spread_fav_dog 2.15-2.20,33.0,82,35.4
+usa-mls,Vittoria 2,4950,25.8,odd_1 2.80-2.85,41.6,odd_x 3.85-3.90,37.8,135,35.6

@@ -1,0 +1,30 @@
+{
+  "engine": "probability_pattern",
+  "mode": "fast",
+  "mode_label": "Pattern veloci (~2-4 min)",
+  "n_matches": 4271,
+  "date_from": "2017-11-25",
+  "date_to": "2025-11-30",
+  "n_train": 2989,
+  "n_test": 1282,
+  "n_features": 34,
+  "n_events": 54,
+  "n_candidates": 4000,
+  "n_validated": 4,
+  "min_sample": 200,
+  "methods": [
+    "grid_adaptive",
+    "random",
+    "mutual_info",
+    "decision_tree",
+    "random_forest",
+    "hist_gradient_boosting",
+    "kmeans",
+    "apriori",
+    "walk_forward"
+  ],
+  "league": "argentina-prim-b-nacional",
+  "saved_at": "2026-06-26T02:35:56.588769",
+  "n_patterns": 4,
+  "csv_file": "argentina-prim-b-nacional_20260626_023556.csv"
+}

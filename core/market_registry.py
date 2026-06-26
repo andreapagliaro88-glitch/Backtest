@@ -1,0 +1,91 @@
+"""Registro completo mercati pre-match, timing e live."""
+from __future__ import annotations
+
+MARKET_DEFS: dict[str, dict] = {
+    "home_win": {"y": "y_home_win", "odd_col": "odds_ft_home_team_win", "label": "1", "odds_tier": "real", "group": "FT"},
+    "draw": {"y": "y_draw", "odd_col": "odds_ft_draw", "label": "X", "odds_tier": "real", "group": "FT"},
+    "away_win": {"y": "y_away_win", "odd_col": "odds_ft_away_team_win", "label": "2", "odds_tier": "real", "group": "FT"},
+    "dc_1x": {"y": "y_dc_1x", "label": "Doppia Chance 1X", "odds_tier": "model", "group": "FT"},
+    "dc_x2": {"y": "y_dc_x2", "label": "Doppia Chance X2", "odds_tier": "model", "group": "FT"},
+    "dc_12": {"y": "y_dc_12", "label": "Doppia Chance 12", "odds_tier": "model", "group": "FT"},
+    "over05": {"y": "y_over05", "implied_from": "odds_ft_over15", "label": "Over 0.5", "odds_tier": "model", "group": "FT"},
+    "over15": {"y": "y_over15", "odd_col": "odds_ft_over15", "label": "Over 1.5", "odds_tier": "real", "group": "FT"},
+    "over25": {"y": "y_over25", "odd_col": "odds_ft_over25", "label": "Over 2.5", "odds_tier": "real", "group": "FT"},
+    "over35": {"y": "y_over35", "odd_col": "odds_ft_over35", "label": "Over 3.5", "odds_tier": "real", "group": "FT"},
+    "over45": {"y": "y_over45", "odd_col": "odds_ft_over45", "label": "Over 4.5", "odds_tier": "real", "group": "FT"},
+    "under15": {"y": "y_under15", "implied_from": "odds_ft_over15", "label": "Under 1.5", "odds_tier": "implied", "group": "FT"},
+    "under25": {"y": "y_under25", "implied_from": "odds_ft_over25", "label": "Under 2.5", "odds_tier": "implied", "group": "FT"},
+    "under35": {"y": "y_under35", "implied_from": "odds_ft_over35", "label": "Under 3.5", "odds_tier": "implied", "group": "FT"},
+    "btts": {"y": "y_btts", "odd_col": "odds_btts_yes", "label": "BTTS Sì", "odds_tier": "real", "group": "FT"},
+    "btts_no": {"y": "y_btts_no", "odd_col": "odds_btts_no", "label": "BTTS No", "odds_tier": "real", "group": "FT"},
+    "over05_ht": {"y": "y_over05_ht", "pct_col": "pre_fh_goal_pct", "label": "Over 0.5 HT", "odds_tier": "estimated", "group": "HT"},
+    "over15_ht": {"y": "y_over15_ht", "label": "Over 1.5 HT", "odds_tier": "model", "group": "HT"},
+    "btts_ht": {"y": "y_btts_ht", "label": "BTTS HT", "odds_tier": "model", "group": "HT"},
+    "draw_ht": {"y": "y_draw_ht", "label": "Pareggio HT", "odds_tier": "model", "group": "HT"},
+    "home_ht": {"y": "y_home_ht", "label": "Home HT", "odds_tier": "model", "group": "HT"},
+    "away_ht": {"y": "y_away_ht", "label": "Away HT", "odds_tier": "model", "group": "HT"},
+    "over05_2h": {"y": "y_over05_2h", "pct_col": "pre_2h_goal_pct", "label": "Over 0.5 2T", "odds_tier": "estimated", "group": "2H"},
+    "over15_2h": {"y": "y_over15_2h", "pct_col": "pre_over15_2h_pct", "label": "Over 1.5 2T", "odds_tier": "estimated", "group": "2H"},
+    "no_goal_2h": {"y": "y_no_goal_2h", "label": "Nessun gol 2T", "odds_tier": "model", "group": "2H"},
+    "goal_after_60": {"y": "y_goal_after_60", "label": "Gol dopo 60'", "odds_tier": "model", "group": "Timing"},
+    "goal_after_65": {"y": "y_goal_after_65", "label": "Gol dopo 65'", "odds_tier": "model", "group": "Timing"},
+    "goal_after_70": {"y": "y_goal_after_70", "label": "Gol dopo 70'", "odds_tier": "model", "group": "Timing"},
+    "goal_after_75": {"y": "y_goal_after_75", "label": "Gol dopo 75'", "odds_tier": "model", "group": "Timing"},
+    "goal_after_80": {"y": "y_goal_after_80", "label": "Gol dopo 80'", "odds_tier": "model", "group": "Timing"},
+    "goal_after_85": {"y": "y_goal_after_85", "label": "Gol dopo 85'", "odds_tier": "model", "group": "Timing"},
+    "fg_before_10": {"y": "y_fg_before_10", "label": "Primo gol entro 10'", "odds_tier": "model", "group": "Timing"},
+    "fg_before_15": {"y": "y_fg_before_15", "label": "Primo gol entro 15'", "odds_tier": "model", "group": "Timing"},
+    "fg_before_20": {"y": "y_fg_before_20", "label": "Primo gol entro 20'", "odds_tier": "model", "group": "Timing"},
+    "fg_before_30": {"y": "y_fg_before_30", "label": "Primo gol entro 30'", "odds_tier": "model", "group": "Timing"},
+    "fg_after_60": {"y": "y_fg_after_60", "label": "Primo gol dopo 60'", "odds_tier": "model", "group": "Timing"},
+    "first_goal_home": {"y": "y_first_goal_home", "label": "Primo gol Casa", "odds_tier": "model", "group": "Timing"},
+    "first_goal_away": {"y": "y_first_goal_away", "label": "Primo gol Ospite", "odds_tier": "model", "group": "Timing"},
+}
+
+LIVE_MARKET_DEFS: dict[str, dict] = {
+    "live_o05_2h_from_00_60": {
+        "y": "y_over05_2h",
+        "live_rules": [("live_00_60", "eq", 1)],
+        "label": "Live: O0.5 2T da 0-0 al 60'",
+        "odds_tier": "model",
+        "group": "Live",
+    },
+    "live_goal_after_60_from_00_60": {
+        "y": "y_goal_after_60",
+        "live_rules": [("live_00_60", "eq", 1)],
+        "label": "Live: Gol dopo 60' da 0-0 al 60'",
+        "odds_tier": "model",
+        "group": "Live",
+    },
+    "live_o05_2h_from_00_ht": {
+        "y": "y_over05_2h",
+        "live_rules": [("live_00_ht", "eq", 1)],
+        "label": "Live: O0.5 2T da 0-0 all'HT",
+        "odds_tier": "model",
+        "group": "Live",
+    },
+    "live_goal_after_70_from_11_60": {
+        "y": "y_goal_after_70",
+        "live_rules": [("live_11_60", "eq", 1)],
+        "label": "Live: Gol dopo 70' da 1-1 al 60'",
+        "odds_tier": "model",
+        "group": "Live",
+    },
+    "live_goal_after_75_from_10_70": {
+        "y": "y_goal_after_75",
+        "live_rules": [("live_10_70", "eq", 1)],
+        "label": "Live: Gol dopo 75' da 1-0 al 70'",
+        "odds_tier": "model",
+        "group": "Live",
+    },
+    "live_btts_from_10_ht": {
+        "y": "y_btts",
+        "live_rules": [("live_h_ht", "eq", 1), ("live_a_ht", "eq", 0)],
+        "label": "Live: BTTS da 1-0 HT",
+        "odds_tier": "model",
+        "group": "Live",
+    },
+}
+
+PREMATCH_DISCOVERY_TIERS = ("real", "implied")
+ALL_DISCOVERY_TIERS = ("real", "implied", "estimated", "model")
