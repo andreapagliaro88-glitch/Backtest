@@ -18,6 +18,7 @@ from ui.tier_metodo import (
     render_tier_optimizer,
     show_active_config_banner,
     show_tier_metodo_panel,
+    show_tier_workflow_guide,
     stakes_fingerprint,
     supports_tier,
 )
@@ -203,9 +204,8 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
         rules = active_tier_rules(cfg.key, cfg.system)
         show_active_config_banner(cfg.key, cfg.system, always=True)
         st.caption(
-            "Questa tab confronta **quali pattern includere**. "
-            "Profit/DD/Score usano gli **stake sopra**. "
-            "Dopo nuovi stake in **Simula stake**, clicca **Calcola combinazioni**."
+            "**Passo 3/3** — Con tier e stake già impostati (passi 1–2), "
+            "trova **quali pattern includere**. Profit/DD usano gli stake attive."
         )
         combo_fp = st.session_state.get(f"{cfg.key}_combo_stakes_fp")
         if combo_fp and combo_fp != stakes_fingerprint(cfg.key, cfg.system, rules):
@@ -258,16 +258,14 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
                         system=cfg.system,
                     )
                 st.session_state[combo_key] = combo_df
-                st.session_state[f"{cfg.key}_section"] = "🧩 Combinazioni pattern"
                 if combo_df is not None and not combo_df.empty:
                     best = combo_df.sort_values("score", ascending=False).iloc[0]
                     pats = patterns_from_combo_row(best)
                     set_active_combo(cfg.key, pats, str(best.get("combo", "")))
-                    st.toast(
-                        f"✅ {len(combo_df)} combinazioni — riepilogo aggiornato: {best['combo']}",
-                        icon="✅",
+                    st.success(
+                        f"✅ **{len(combo_df)}** combinazioni calcolate. "
+                        f"Migliore per score: **{best['combo']}**"
                     )
-                    st.rerun()
                 else:
                     st.warning("Nessuna combinazione ha prodotto risultati.")
             except Exception as exc:
@@ -356,7 +354,7 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
         if st.button("Applica al riepilogo", type="primary", key=f"{cfg.key}_apply_summary"):
             row = combo_df[combo_df["combo"] == sel_combo].iloc[0]
             set_active_combo(cfg.key, patterns_from_combo_row(row), sel_combo)
-            st.rerun()
+            st.success(f"Riepilogo aggiornato: **{sel_combo}**")
 
     pat_row = combo_df[combo_df["combo"] == sel_combo].iloc[0]
 
@@ -380,6 +378,12 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
         else:
             detail_trades = cfg.run_backtest(df_raw, pat_tuple)
     _render_ccs_backtest(detail_trades, sel_combo, cfg.key, section="combo")
+
+
+@st.fragment
+def _render_combo_tab_fragment(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataFrame):
+    """Fragment: click su Calcola combinazioni non resetta la tab attiva."""
+    _render_combo_tab(cfg, patterns, df_raw)
 
 
 def _render_stake_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataFrame):
@@ -491,18 +495,23 @@ def show_strategy_tab(cfg: StrategyConfig):
                 patterns.extend([f"{sys}:{x}" for x in p])
         st.caption(f"Dati combinati HT + O15 + O25 · {len(df_raw):,} righe totali")
 
-    tier_extra = ["🎯 Ottimizza tier", "⚖️ Simula stake"] if supports_tier(cfg.system) else []
-    tab_bt, tab_combo, tab_opt, *extra = st.tabs(list(SECTIONS) + tier_extra)
-    tab_tier = extra[0] if supports_tier(cfg.system) else None
-    tab_stake_sim = extra[1] if supports_tier(cfg.system) else None
+    if supports_tier(cfg.system):
+        show_tier_workflow_guide(cfg.key, cfg.system)
+        tab_bt, tab_tier, tab_stake_sim, tab_combo, tab_opt = st.tabs((
+            "📈 Backtest attuale",
+            "🎯 Ottimizza tier",
+            "⚖️ Simula stake",
+            "🧩 Combinazioni pattern",
+            "⚙️ Ottimizza stake",
+        ))
+    else:
+        tab_bt, tab_combo, tab_opt = st.tabs(list(SECTIONS))
+        tab_tier = tab_stake_sim = None
 
     if st.session_state.get(f"{cfg.key}_combo_results") is not None:
         done = st.session_state.get(f"{cfg.key}_combo_results")
         if done is not None and not done.empty:
-            st.success(
-                f"Combinazioni pronte ({len(done)} risultati) — apri **Combinazioni pattern**",
-                icon="✅",
-            )
+            st.caption(f"Combinazioni pronte: **{len(done)}** risultati (tab **Combinazioni pattern**)")
 
     with tab_bt:
         if cfg.system and patterns:
@@ -545,7 +554,7 @@ def show_strategy_tab(cfg: StrategyConfig):
 
     with tab_combo:
         pat_list = list_available_patterns(df_raw, cfg.system) if cfg.system else patterns
-        _render_combo_tab(cfg, pat_list, df_raw)
+        _render_combo_tab_fragment(cfg, pat_list, df_raw)
 
     with tab_opt:
         pat_list = list_available_patterns(df_raw, cfg.system) if cfg.system else []

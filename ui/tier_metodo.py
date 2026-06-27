@@ -1,6 +1,8 @@
 """Pannello Metodo Tier + ottimizzatori — tutte le strategie con pattern."""
 from __future__ import annotations
 
+from dataclasses import replace
+
 import streamlit as st
 
 from core.tier_backtest import tier_summary
@@ -49,8 +51,40 @@ def mark_combos_stale(cfg_key: str):
 
 
 def apply_tier_rules(cfg_key: str, rules_dict: dict):
+    """Applica regole complete (es. assegnazione pattern T3/T4 da ottimizzatore tier)."""
     st.session_state[_rules_key(cfg_key)] = rules_dict
+    st.session_state[f"{cfg_key}_workflow_tier_done"] = True
     mark_combos_stale(cfg_key)
+
+
+def apply_stake_rules(cfg_key: str, system: str, stake_row: dict):
+    """Applica solo stake T1–T4, mantiene T3/T4 pattern del passo tier."""
+    current = active_tier_rules(cfg_key, system)
+    updated = replace(
+        current,
+        stake_t1=float(stake_row["stake_t1"]),
+        stake_t2=float(stake_row["stake_t2"]),
+        stake_t3=float(stake_row["stake_t3"]),
+        stake_t4=float(stake_row["stake_t4"]),
+    )
+    st.session_state[_rules_key(cfg_key)] = tier_rules_to_dict(updated)
+    st.session_state[f"{cfg_key}_workflow_stake_done"] = True
+    mark_combos_stale(cfg_key)
+
+
+def show_tier_workflow_guide(cfg_key: str, system: str):
+    """Flusso consigliato: tier → stake → combinazioni pattern."""
+    tier_done = st.session_state.get(f"{cfg_key}_workflow_tier_done") or st.session_state.get(_rules_key(cfg_key))
+    stake_done = st.session_state.get(f"{cfg_key}_workflow_stake_done")
+
+    st.info(
+        "**Flusso consigliato**\n\n"
+        "1. **🎯 Ottimizza tier** — quali pattern in T3 / T4 / esclusi\n"
+        "2. **⚖️ Simula stake** — stake T1/T2/T3/T4 con tutti i pattern combinati\n"
+        "3. **🧩 Combinazioni pattern** — quale subset di pattern usare (con stake già impostate)\n\n"
+        f"Stato: tier {'✅' if tier_done else '⬜'} · stake {'✅' if stake_done else '⬜'} · "
+        "poi **Calcola combinazioni**"
+    )
 
 
 def show_active_config_banner(cfg_key: str, system: str, *, always: bool = False):
@@ -136,7 +170,8 @@ def show_tier_metodo_panel(cfg_key: str, system: str, strategy_label: str, df_tr
 def render_tier_optimizer(cfg_key: str, system: str, strategy_label: str, df_raw):
     st.markdown(f"### Ottimizzatore tier — {strategy_label}")
     st.caption(
-        "Backtest ogni pattern da solo → suggerisce **T3** (edge forte) vs **T4** (marginali) vs **esclusi**."
+        "**Passo 1/3** — Backtest ogni pattern da solo → suggerisce **T3** (edge forte) "
+        "vs **T4** (marginali) vs **esclusi**. Poi vai su **Simula stake**."
     )
 
     patterns = list_patterns_for_system(df_raw, system)
@@ -199,6 +234,8 @@ def render_tier_optimizer(cfg_key: str, system: str, strategy_label: str, df_raw
             if st.button("↩️ Ripristina default", key=f"{cfg_key}_reset_tier_rules"):
                 st.session_state.pop(_rules_key(cfg_key), None)
                 st.session_state.pop(f"{cfg_key}_tier_opt_result", None)
+                st.session_state.pop(f"{cfg_key}_workflow_tier_done", None)
+                st.session_state.pop(f"{cfg_key}_workflow_stake_done", None)
                 mark_combos_stale(cfg_key)
                 st.rerun()
 
@@ -217,8 +254,8 @@ def render_stake_simulator(cfg_key: str, system: str, strategy_label: str, df_ra
 
     st.markdown(f"### Simulazione stake — {strategy_label}")
     st.caption(
-        "Combina **tutti i pattern** e testa centinaia di combinazioni stake T1/T2/T3/T4. "
-        "Lo **score** bilancia profit e drawdown."
+        "**Passo 2/3** — Combina **tutti i pattern** e testa stake T1/T2/T3/T4. "
+        "Mantiene T3/T4 pattern del passo 1. Poi **Combinazioni pattern**."
     )
 
     patterns = list_patterns_for_system(df_raw, system)
@@ -326,20 +363,23 @@ def render_stake_simulator(cfg_key: str, system: str, strategy_label: str, df_ra
     )
 
     if st.button("✅ Applica configurazione selezionata", type="primary", key=f"{cfg_key}_apply_picked"):
-        apply_tier_rules(cfg_key, picked["rules"])
-        st.success(f"Stake rank #{sel_idx + 1} applicati.")
+        apply_stake_rules(cfg_key, system, picked)
+        st.success(
+            f"Stake rank #{sel_rank} applicate (T3/T4 pattern invariati). "
+            "Vai su **🧩 Combinazioni pattern** → **Calcola combinazioni**."
+        )
         st.rerun()
 
     with st.expander("Scorciatoie rapide"):
         ca, cb, cc = st.columns(3)
         if ca.button("Miglior score", key=f"{cfg_key}_apply_best_score"):
-            apply_tier_rules(cfg_key, best_score["rules"])
+            apply_stake_rules(cfg_key, system, best_score)
             st.rerun()
         if cb.button("Max profit", key=f"{cfg_key}_apply_best_profit"):
-            apply_tier_rules(cfg_key, best_profit["rules"])
+            apply_stake_rules(cfg_key, system, best_profit)
             st.rerun()
         if cc.button("Miglior Calmar", key=f"{cfg_key}_apply_best_calmar"):
-            apply_tier_rules(cfg_key, best_calmar["rules"])
+            apply_stake_rules(cfg_key, system, best_calmar)
             st.rerun()
 
     st.download_button(
