@@ -24,7 +24,7 @@ def any_pattern_matches(names: list[str], candidates: list[str]) -> bool:
 
 @dataclass
 class TierRules:
-    """Regole stake U per tier (backtest qualità — CCS usa sempre 1U in €)."""
+    """Regole stake U per tier — convertite in € dal CCS come stake_u × 1U."""
     stake_t1: float = 5.0
     stake_t2: float = 3.0
     stake_t3: float = 1.5
@@ -111,9 +111,16 @@ def tier_label(tier: int | None) -> str:
 
 def rules_with_all_patterns(patterns: list[str], base: TierRules) -> TierRules:
     """Include ogni pattern in T3/T4 così i singoli engine non vengono saltati."""
-    t3 = list(base.tier3_patterns)
-    t4 = list(base.tier4_patterns)
-    for p in patterns:
+    return rules_for_pattern_combo(tuple(patterns), base)
+
+
+def rules_for_pattern_combo(combo: tuple[str, ...] | list[str], base: TierRules) -> TierRules:
+    """Regole tier limitate ai pattern della combinazione attiva."""
+    active = list(combo)
+    active_set = set(active)
+    t3 = [p for p in base.tier3_patterns if p in active_set]
+    t4 = [p for p in base.tier4_patterns if p in active_set]
+    for p in active:
         if any_pattern_matches([p], t3 + t4):
             continue
         t4.append(p)

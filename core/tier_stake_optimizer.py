@@ -1,4 +1,4 @@
-"""Simulazione stake tier — tutte le strategie, bilancio profit/DD."""
+"""Simulazione stake tier — confronto combinazioni pattern con stake attuali."""
 from __future__ import annotations
 
 from dataclasses import asdict, replace
@@ -7,9 +7,10 @@ import random
 import numpy as np
 import pandas as pd
 
-from core.tier_backtest import TierState, prepare_tier_data, process_tier_trade
+from core.tier_backtest import TierState, prepare_tier_records
 from core.tier_config import default_tier_risk, profit_odds_for
-from core.tier_engine import TierRules, rules_with_all_patterns
+from core.pattern_combo_optimizer import combo_label, enumerate_pattern_combos
+from core.tier_engine import TierRules, classify_tier, rules_for_pattern_combo
 from core.tier_optimizer import list_patterns_for_system
 
 
@@ -17,21 +18,24 @@ def balanced_score(profit: float, max_dd: float, dd_weight: float = 0.6) -> floa
     return profit + max_dd * dd_weight
 
 
-def _record_tier_events(df_raw: pd.DataFrame, system: str, rules: TierRules) -> list[dict]:
-    data = prepare_tier_data(df_raw, system, patterns=None)
-    if data.empty:
-        return []
-
-    state = TierState()
+def _record_tier_events_from_records(
+    match_records: list,
+    combo: tuple[str, ...],
+    rules: TierRules,
+    system: str,
+) -> list[dict]:
+    """Stessa logica del tab Combinazioni pattern — 1 passata dati, N combo."""
+    combo_set = set(combo)
     risk = default_tier_risk(system)
-    profit_odds = profit_odds_for(system)
+    state = TierState()
     events: list[dict] = []
 
-    for row in data.itertuples(index=False):
-        patterns = list(row.patterns)
-        from core.tier_engine import classify_tier
+    for pats, vinto, _date in match_records:
+        active = [p for p in pats if p in combo_set]
+        if not active:
+            continue
 
-        tier = classify_tier(patterns, rules)
+        tier = classify_tier(active, rules)
         if tier is None:
             state.profits.append(0)
             state.equity_history.append(state.equity)
@@ -49,12 +53,11 @@ def _record_tier_events(df_raw: pd.DataFrame, system: str, rules: TierRules) -> 
             mult *= risk.shock_factor
             state.shock_mode -= 1
 
-        vinto = bool(row.vinto)
         events.append({"tier": tier, "vinto": vinto, "mult": mult})
 
         stake_placeholder = 1.0 * mult
         if vinto:
-            profit = round(stake_placeholder * profit_odds, 4)
+            profit = round(stake_placeholder * profit_odds_for(system), 4)
             state.loss_streak = 0
             state.t23_reduced = False
         else:
@@ -89,6 +92,10 @@ def _metrics_from_events(
             "stake_t1": rules.stake_t1, "stake_t2": rules.stake_t2,
             "stake_t3": rules.stake_t3, "stake_t4": rules.stake_t4,
             "rules": asdict(rules),
+            "params": {
+                "stake_t1": rules.stake_t1, "stake_t2": rules.stake_t2,
+                "stake_t3": rules.stake_t3, "stake_t4": rules.stake_t4,
+            },
         }
 
     profits = []
@@ -112,6 +119,10 @@ def _metrics_from_events(
         "stake_t1": rules.stake_t1, "stake_t2": rules.stake_t2,
         "stake_t3": rules.stake_t3, "stake_t4": rules.stake_t4,
         "rules": asdict(rules),
+        "params": {
+            "stake_t1": rules.stake_t1, "stake_t2": rules.stake_t2,
+            "stake_t3": rules.stake_t3, "stake_t4": rules.stake_t4,
+        },
     }
 
 
@@ -143,6 +154,164 @@ def _random_stakes(rng: random.Random) -> tuple[float, float, float, float]:
     return round(s1, 2), round(s2, 2), round(s3, 2), round(s4, 2)
 
 
+def _append_stake_trials(
+    events: list[dict],
+    rules: TierRules,
+    po: float,
+    dd_weight: float,
+    seen: set[tuple[float, float, float, float]],
+    rows: list[dict],
+    *,
+    include_random: bool,
+    random_iterations: int,
+    rng: random.Random | None,
+) -> None:
+    for s1, s2, s3, s4 in _stake_grid():
+        key = (s1, s2, s3, s4)
+        if key in seen:
+            continue
+        seen.add(key)
+        trial = replace(rules, stake_t1=s1, stake_t2=s2, stake_t3=s3, stake_t4=s4)
+        row = _metrics_from_events(events, trial, po, dd_weight)
+        rows.append(row)
+
+    if include_random and rng and random_iterations > 0:
+        for _ in range(random_iterations):
+            s1, s2, s3, s4 = _random_stakes(rng)
+            key = (s1, s2, s3, s4)
+            if key in seen:
+                continue
+            seen.add(key)
+            trial = replace(rules, stake_t1=s1, stake_t2=s2, stake_t3=s3, stake_t4=s4)
+            row = _metrics_from_events(events, trial, po, dd_weight)
+            rows.append(row)
+
+
+def _resolve_pattern_combo(
+    df_raw: pd.DataFrame,
+    system: str,
+    patterns: tuple[str, ...] | list[str] | None,
+) -> tuple[str, ...]:
+    available = list_patterns_for_system(df_raw, system)
+    if not available:
+        return tuple()
+    if patterns:
+        return tuple(p for p in patterns if p in available)
+    return tuple(available)
+
+
+def optimize_tier_stakes(
+    df_raw: pd.DataFrame,
+    system: str,
+    base_rules: TierRules,
+    patterns: tuple[str, ...] | list[str] | None = None,
+    *,
+    dd_weight: float = 0.6,
+    max_dd_limit: float | None = None,
+    include_random: bool = True,
+    random_iterations: int = 500,
+    seed: int = 42,
+) -> tuple[dict, pd.DataFrame]:
+    """Ottimizza stake T1/T2/T3/T4 con backtest tier sui pattern attivi."""
+    pat_tuple = _resolve_pattern_combo(df_raw, system, patterns)
+    if not pat_tuple:
+        return {}, pd.DataFrame()
+
+    rules = rules_for_pattern_combo(pat_tuple, base_rules)
+    po = profit_odds_for(system)
+
+    if "system" in df_raw.columns:
+        sys_df = df_raw[df_raw["system"] == system]
+    else:
+        sys_df = df_raw
+    match_records = prepare_tier_records(sys_df, system)
+    events = _record_tier_events_from_records(match_records, pat_tuple, rules, system)
+
+    baseline = _metrics_from_events(events, rules, po, dd_weight)
+
+    seen: set[tuple[float, float, float, float]] = set()
+    rows: list[dict] = []
+    rng = random.Random(seed) if include_random else None
+    _append_stake_trials(
+        events, rules, po, dd_weight, seen, rows,
+        include_random=include_random,
+        random_iterations=random_iterations,
+        rng=rng,
+    )
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return baseline, df
+
+    if max_dd_limit is not None:
+        df = df[df["max_dd"] >= max_dd_limit]
+    df = df.sort_values(["score", "profit"], ascending=False).reset_index(drop=True)
+    return baseline, df
+
+
+def simulate_stakes_by_pattern_combos(
+    df_raw: pd.DataFrame,
+    system: str,
+    base_rules: TierRules,
+    *,
+    dd_weight: float = 0.6,
+    max_dd_limit: float | None = None,
+    progress_callback=None,
+    **_,
+) -> tuple[dict, pd.DataFrame, pd.DataFrame, TierRules]:
+    """
+    Per ogni combinazione di pattern (N, N-1, …, 1) calcola profit/DD
+    con le stake T1/T2/T3/T4 attuali (una riga per combinazione).
+    """
+    patterns = list_patterns_for_system(df_raw, system)
+    if not patterns:
+        return {}, pd.DataFrame(), pd.DataFrame(), base_rules
+
+    all_patterns = tuple(patterns)
+    rules_all = rules_for_pattern_combo(all_patterns, base_rules)
+    po = profit_odds_for(system)
+    combos = enumerate_pattern_combos(patterns)
+    total = len(combos)
+    rows: list[dict] = []
+
+    if "system" in df_raw.columns:
+        sys_df = df_raw[df_raw["system"] == system]
+    else:
+        sys_df = df_raw
+    match_records = prepare_tier_records(sys_df, system)
+
+    for i, combo in enumerate(combos):
+        combo_rules = rules_for_pattern_combo(combo, base_rules)
+        events = _record_tier_events_from_records(match_records, combo, combo_rules, system)
+        row = _metrics_from_events(events, combo_rules, po, dd_weight)
+        row.update({
+            "combo": combo_label(combo),
+            "n_patterns": len(combo),
+            "patterns": list(combo),
+        })
+        rows.append(row)
+        if progress_callback and total:
+            progress_callback((i + 1) / total)
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return {}, df, df, rules_all
+
+    if max_dd_limit is not None:
+        df = df[df["max_dd"] >= max_dd_limit]
+    df = df.sort_values(["score", "profit"], ascending=False).reset_index(drop=True)
+
+    baseline_events = _record_tier_events_from_records(match_records, all_patterns, rules_all, system)
+    baseline = _metrics_from_events(baseline_events, rules_all, po, dd_weight)
+    baseline.update({
+        "combo": combo_label(all_patterns),
+        "n_patterns": len(all_patterns),
+        "patterns": list(all_patterns),
+    })
+
+    return baseline, df, df.copy(), rules_all
+
+
 def simulate_all_patterns_stakes(
     df_raw: pd.DataFrame,
     system: str,
@@ -150,48 +319,19 @@ def simulate_all_patterns_stakes(
     *,
     dd_weight: float = 0.6,
     max_dd_limit: float | None = None,
-    include_random: bool = True,
-    random_iterations: int = 500,
-    seed: int = 42,
+    progress_callback=None,
+    **kwargs,
 ) -> tuple[dict, pd.DataFrame, TierRules]:
-    patterns = list_patterns_for_system(df_raw, system)
-    if not patterns:
-        return {}, pd.DataFrame(), base_rules
-
-    rules_all = rules_with_all_patterns(patterns, base_rules)
-    events = _record_tier_events(df_raw, system, rules_all)
-    po = profit_odds_for(system)
-    baseline = _metrics_from_events(events, rules_all, po, dd_weight)
-
-    seen: set[tuple[float, float, float, float]] = set()
-    rows: list[dict] = []
-
-    for s1, s2, s3, s4 in _stake_grid():
-        key = (s1, s2, s3, s4)
-        if key in seen:
-            continue
-        seen.add(key)
-        trial = replace(rules_all, stake_t1=s1, stake_t2=s2, stake_t3=s3, stake_t4=s4)
-        rows.append(_metrics_from_events(events, trial, po, dd_weight))
-
-    if include_random:
-        rng = random.Random(seed)
-        for _ in range(random_iterations):
-            s1, s2, s3, s4 = _random_stakes(rng)
-            key = (s1, s2, s3, s4)
-            if key in seen:
-                continue
-            seen.add(key)
-            trial = replace(rules_all, stake_t1=s1, stake_t2=s2, stake_t3=s3, stake_t4=s4)
-            rows.append(_metrics_from_events(events, trial, po, dd_weight))
-
-    df = pd.DataFrame(rows)
-    if df.empty:
-        return baseline, df, rules_all
-    if max_dd_limit is not None:
-        df = df[df["max_dd"] >= max_dd_limit]
-    df = df.sort_values(["score", "profit"], ascending=False).reset_index(drop=True)
-    return baseline, df, rules_all
+    baseline, results, _best, rules_all = simulate_stakes_by_pattern_combos(
+        df_raw,
+        system,
+        base_rules,
+        dd_weight=dd_weight,
+        max_dd_limit=max_dd_limit,
+        progress_callback=progress_callback,
+        **kwargs,
+    )
+    return baseline, results, rules_all
 
 
 def format_stake_combo(row) -> str:

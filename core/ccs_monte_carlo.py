@@ -43,6 +43,7 @@ def run_ccs_monte_carlo(
                 profit_odds=float(t["profit_odds"]),
                 date=t.get("date"),
                 system=t.get("system", ""),
+                stake_u=float(t.get("stake_u") or 1.0),
             )
             if ccs.bankroll <= ruin_bankroll or not ccs.can_bet():
                 if ccs.bankroll < ccs.current_unit_eur:

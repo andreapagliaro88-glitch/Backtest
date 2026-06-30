@@ -46,14 +46,15 @@ class TradeRecord:
     dd_eur: float
     dd_pct: float
     tier_threshold: float
+    stake_u: float = 1.0
     withdrawn: float = 0.0
 
 
 class ControlledCompounding:
     """
-    Crescita composta controllata: 1U a scaglioni fissi, stake max 1U,
+    Crescita composta controllata: stake in € = stake_u × 1U allo scaglione attivo,
     upgrade solo fuori drawdown, downgrade dopo 50 trade sotto scaglione,
-  prelievi automatici oltre 6000€.
+    prelievi automatici oltre 6000€.
     """
 
     def __init__(self, initial_bankroll: float = 150.0):
@@ -111,12 +112,19 @@ class ControlledCompounding:
         total_equity = self.bankroll + self.total_withdrawn
         return (total_equity - self.initial_bankroll) / self.initial_bankroll * 100.0
 
-    def stake_eur(self) -> float:
-        """Stake massima: sempre 1U corrente."""
-        return self.current_unit_eur
+    def stake_eur_for(self, stake_u: float = 1.0) -> float:
+        """Stake in € = moltiplicatore tier × valore 1U corrente."""
+        mult = max(float(stake_u or 0), 0.0)
+        if mult <= 0:
+            return 0.0
+        return round(self.current_unit_eur * mult, 2)
 
-    def can_bet(self) -> bool:
-        return self.bankroll >= self.current_unit_eur
+    def stake_eur(self) -> float:
+        """Retrocompatibilità: 1U corrente."""
+        return self.stake_eur_for(1.0)
+
+    def can_bet(self, stake_u: float = 1.0) -> bool:
+        return self.bankroll >= self.stake_eur_for(stake_u)
 
     def settle_trade(
         self,
@@ -124,14 +132,18 @@ class ControlledCompounding:
         profit_odds: float,
         date: Any = None,
         system: str = "",
+        stake_u: float = 1.0,
     ) -> float:
         """
-        Registra un trade: stake = 1U, profitto in €.
-        Ritorna profit_eur (0 se non si può puntare).
+        Registra un trade: stake = stake_u × 1U, profitto in €.
+        Ritorna profit_eur (0 se bankroll insufficiente).
         """
-        stake = self.stake_eur()
-        if not self.can_bet():
-            self._log_trade(date, system, vinto, 0.0, stake, 0.0, 0.0)
+        stake = self.stake_eur_for(stake_u)
+        if stake <= 0:
+            self._log_trade(date, system, vinto, 0.0, self.current_unit_eur, 0.0, 0.0, stake_u)
+            return 0.0
+        if not self.can_bet(stake_u):
+            self._log_trade(date, system, vinto, 0.0, self.current_unit_eur, 0.0, 0.0, stake_u)
             return 0.0
 
         profit = round(stake * profit_odds, 2) if vinto else round(-stake, 2)
@@ -142,7 +154,7 @@ class ControlledCompounding:
         self._try_upgrade_tier(date)
         self._update_downgrade_counter()
         withdrawn = self._apply_withdrawals(date)
-        self._log_trade(date, system, vinto, stake, stake, profit, withdrawn)
+        self._log_trade(date, system, vinto, stake, self.current_unit_eur, profit, withdrawn, stake_u)
         return profit
 
     def _apply_withdrawals(self, date: Any) -> float:
@@ -202,6 +214,7 @@ class ControlledCompounding:
         unit_eur: float,
         profit_eur: float,
         withdrawn: float,
+        stake_u: float = 1.0,
     ) -> None:
         self.trades.append(TradeRecord(
             trade_index=self._trade_count,
@@ -217,6 +230,7 @@ class ControlledCompounding:
             dd_eur=self.drawdown_eur,
             dd_pct=self.drawdown_pct,
             tier_threshold=self.current_tier_threshold,
+            stake_u=float(stake_u or 0),
             withdrawn=withdrawn,
         ))
         self._trade_count += 1

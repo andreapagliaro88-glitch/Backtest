@@ -1,6 +1,8 @@
 """Tab strategia con backtest, combinazioni pattern e ottimizzazione."""
 from __future__ import annotations
 
+import streamlit as st
+
 from core.backtest import run_backtest
 from core.combined_combo_optimizer import optimize_combined_combos, run_combined_with_patterns
 from core.combined_optimizer import format_params as combined_format, optimize_combined
@@ -93,31 +95,53 @@ def show_combined_tab(df_raw, df_grouped):
     ))
 
 
-def show_sh0_tab():
-    import streamlit as st
+@st.cache_data
+def _load_sh0_data():
+    return load_sh0_data()
 
-    df_raw = load_sh0_data()
+
+@st.cache_data
+def _load_sh1_data():
+    return load_sh1_data()
+
+
+@st.cache_data
+def _load_sh2_data():
+    return load_sh2_data()
+
+
+def show_sh0_tab():
+    try:
+        df_raw = _load_sh0_data()
+    except Exception as exc:
+        st.error(f"Errore caricamento 0 SH: {exc}")
+        return
     if df_raw.empty:
         st.error("Nessun file in `data/sh0/`. Copia i file `.xlsx` e clicca **Aggiorna dati**.")
         return
 
-    show_strategy_tab(StrategyConfig(
-        key="sh0",
-        title="0 SH — Backtest & Ottimizzazione",
-        data_hint="Quota **1.3** · **+0.3U / -1U** per trade · **1U** fissa (Composta Controllata) · stop DD **-18U** · combinazioni **senza duplicati** per partita.",
-        system="SH0",
-        df_raw=df_raw,
-        run_backtest=lambda d, p=None, **kw: run_sh0_backtest(d, p, **kw),
-        optimize_combos=optimize_sh0_combos,
-        optimize_stake=optimize_sh0,
-        format_params=sh0_format,
-    ))
+    try:
+        show_strategy_tab(StrategyConfig(
+            key="sh0",
+            title="0 SH — Backtest & Ottimizzazione",
+            data_hint="Quota **1.3** · **+0.3U / -1U** per trade · **1U** fissa (Composta Controllata) · stop DD **-18U** · combinazioni **senza duplicati** per partita.",
+            system="SH0",
+            df_raw=df_raw,
+            run_backtest=lambda d, p=None, **kw: run_sh0_backtest(d, p, **kw),
+            optimize_combos=optimize_sh0_combos,
+            optimize_stake=optimize_sh0,
+            format_params=sh0_format,
+        ))
+    except Exception as exc:
+        st.error(f"Errore tab 0 SH: {exc}")
 
 
 def show_sh1_tab():
-    import streamlit as st
-
-    df_raw = load_sh1_data()
+    try:
+        df_raw = _load_sh1_data()
+    except Exception as exc:
+        st.error(f"Errore caricamento 1 SH: {exc}")
+        return
     if df_raw.empty:
         st.error("Nessun file in `data/sh1/`. Copia i file `.xlsx` e clicca **Aggiorna dati**.")
         return
@@ -136,9 +160,11 @@ def show_sh1_tab():
 
 
 def show_sh2_tab():
-    import streamlit as st
-
-    df_raw = load_sh2_data()
+    try:
+        df_raw = _load_sh2_data()
+    except Exception as exc:
+        st.error(f"Errore caricamento 2 SH: {exc}")
+        return
     if df_raw.empty:
         st.error("Nessun file in `data/sh2/`. Copia i file `.xlsx` e clicca **Aggiorna dati**.")
         return

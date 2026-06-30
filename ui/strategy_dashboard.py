@@ -9,13 +9,25 @@ import streamlit as st
 
 from compound_config import INITIAL_BANKROLL
 from core.ccs_runner import enrich_trades_with_eur, format_trades_eur_display, run_ccs_on_backtest_df
-from core.pattern_combo_optimizer import best_combos, list_available_patterns, optimize_pattern_combos
+from core.pattern_combo_optimizer import (
+    best_combos,
+    combo_display_columns,
+    combos_per_size,
+    count_pattern_combos,
+    list_available_patterns,
+    optimize_pattern_combos,
+    optimize_tier_pattern_combos,
+    split_combos_by_n,
+)
+from core.strategy_state_store import hydrate_session, persist_from_session
 from ui.plot_theme import plot_bar, plot_line
+from ui.st_widgets import dataframe_kwargs
 from ui.tier_metodo import (
     active_tier_rules,
+    apply_stake_rules,
     format_stakes_summary,
-    render_stake_simulator,
-    render_tier_optimizer,
+    render_stake_simulator_fragment,
+    render_tier_optimizer_fragment,
     show_active_config_banner,
     show_tier_metodo_panel,
     show_tier_workflow_guide,
@@ -83,9 +95,15 @@ def _ccs_equity_charts(df_ccs: pd.DataFrame, title: str, key_prefix: str = "ccs"
 
     col3, col4 = st.columns(2)
     with col3:
-        plot_line(df_ccs, y="dd_eur", title="Drawdown (€)", color="#f85149", key=f"{key_prefix}_dd_eur")
+        plot_line(
+            df_ccs, y="dd_eur", title="Drawdown (€)", color="#f85149",
+            fill_to_zero=True, key=f"{key_prefix}_dd_eur",
+        )
     with col4:
-        plot_line(df_ccs, y="dd_pct", title="Drawdown (%)", color="#d29922", key=f"{key_prefix}_dd_pct")
+        plot_line(
+            df_ccs, y="dd_pct", title="Drawdown (%)", color="#d29922",
+            fill_to_zero=True, key=f"{key_prefix}_dd_pct",
+        )
 
     monthly = df_ccs.copy()
     monthly["date"] = pd.to_datetime(monthly["date"])
@@ -103,8 +121,10 @@ def _render_ccs_backtest(
     title: str,
     cfg_key: str,
     section: str = "bt",
+    system: str | None = None,
 ):
     """Backtest con CCS: la strategia decide gli ingressi, CCS gestisce 1U in €."""
+    tier_system = system or cfg_key.upper()
     prefix = f"{cfg_key}_{section}"
     bankroll = st.number_input(
         "Bankroll iniziale (€)",
@@ -115,7 +135,7 @@ def _render_ccs_backtest(
     )
     st.caption(
         "Controlled Compounding: ingressi dalla strategia (stake U > 0) · "
-        "stake reale sempre 1U · scaglioni fissi · prelievo a 6000€"
+        "stake in € = Stake (U) × 1U allo scaglione · prelievo a 6000€"
     )
 
     df_ccs, ccs = run_ccs_on_backtest_df(df_trades, bankroll)
@@ -132,11 +152,16 @@ def _render_ccs_backtest(
 
     df_display = enrich_trades_with_eur(df_trades, df_ccs)
     n_skip = int((df_display["ingresso"] == "SKIP").sum()) if not df_display.empty else 0
-    expand_trades = supports_tier(cfg_key)
-    with st.expander("Dettaglio trade (€)", expanded=expand_trades):
+    expand_trades = supports_tier(tier_system)
+    with st.expander("Dettaglio trade (tier U + CCS €)", expanded=expand_trades):
         if n_skip:
             st.caption(f"Ingressi: {len(df_ccs)} · Saltati dalla strategia: {n_skip}")
-        if supports_tier(cfg_key) and not df_display.empty and "patterns_str" in df_display.columns:
+        if supports_tier(tier_system):
+            st.caption(
+                "**Stake (U)** = puntata Metodo tier. "
+                "**Stake CCS (€)** = Stake (U) × **1U (€)** allo scaglione bankroll attuale."
+            )
+        if supports_tier(tier_system) and not df_display.empty and "patterns_str" in df_display.columns:
             skip_pat = df_display.loc[df_display["ingresso"] == "SKIP", "patterns_str"]
             if not skip_pat.empty:
                 top_skip = skip_pat.value_counts().head(5)
@@ -173,6 +198,22 @@ def bt_patterns_key(cfg_key: str) -> str:
     return f"{cfg_key}_bt_patterns"
 
 
+def bt_trades_key(cfg_key: str) -> str:
+    return f"{cfg_key}_bt_trades"
+
+
+def _run_strategy_backtest(cfg: StrategyConfig, df_raw: pd.DataFrame, patterns: list[str] | None):
+    pat = tuple(patterns) if patterns else None
+    tier_rules = active_tier_rules(cfg.key, cfg.system) if supports_tier(cfg.system) else None
+    if cfg.key == "combined":
+        return cfg.run_backtest(df_raw)
+    if supports_tier(cfg.system):
+        return cfg.run_backtest(df_raw, pat, tier_rules=tier_rules)
+    if cfg.system and patterns is not None:
+        return cfg.run_backtest(df_raw, pat)
+    return cfg.run_backtest(df_raw)
+
+
 def _sync_bt_patterns_widget(cfg_key: str, options: list[str]) -> None:
     """Aggiorna il multiselect backtest solo prima che il widget venga creato."""
     if not st.session_state.get(patterns_dirty_key(cfg_key)):
@@ -183,18 +224,212 @@ def _sync_bt_patterns_widget(cfg_key: str, options: list[str]) -> None:
     st.session_state.pop(patterns_dirty_key(cfg_key), None)
 
 
+def combo_summary_dirty_key(cfg_key: str) -> str:
+    return f"{cfg_key}_combo_summary_dirty"
+
+
+def _sync_combo_summary_pick(cfg_key: str, options: list[str]) -> None:
+    """Allinea il selectbox alla combo attiva prima che il widget venga creato."""
+    if not st.session_state.get(combo_summary_dirty_key(cfg_key)):
+        return
+    label = get_active_combo_label(cfg_key)
+    pick_key = f"{cfg_key}_combo_summary_pick"
+    if label and label in options:
+        st.session_state[pick_key] = label
+    elif options:
+        st.session_state[pick_key] = options[0]
+    st.session_state.pop(combo_summary_dirty_key(cfg_key), None)
+
+
 def set_active_combo(cfg_key: str, patterns: tuple[str, ...] | None, combo_label: str = ""):
     if patterns:
         st.session_state[active_patterns_key(cfg_key)] = tuple(patterns)
         st.session_state[active_combo_label_key(cfg_key)] = combo_label
         st.session_state[patterns_dirty_key(cfg_key)] = True
+        if combo_label:
+            st.session_state[combo_summary_dirty_key(cfg_key)] = True
     else:
         st.session_state.pop(active_patterns_key(cfg_key), None)
         st.session_state.pop(active_combo_label_key(cfg_key), None)
+    persist_from_session(cfg_key, st.session_state)
+
+
+def _persist_combo_state(cfg_key: str):
+    persist_from_session(cfg_key, st.session_state)
 
 
 def get_active_combo_label(cfg_key: str) -> str | None:
     return st.session_state.get(active_combo_label_key(cfg_key))
+
+
+def _combo_results_key(cfg_key: str) -> str:
+    return f"{cfg_key}_combo_results"
+
+
+def _needs_combo_recompute(cfg: StrategyConfig, patterns: list[str], *, force: bool = False) -> bool:
+    """True solo se l'utente forza il ricalcolo (pulsante) o non ci sono ancora risultati."""
+    combo_df = st.session_state.get(_combo_results_key(cfg.key))
+    if combo_df is None or combo_df.empty:
+        return bool(patterns)
+    if not force:
+        return False
+    return True
+
+
+def _combo_is_outdated(cfg: StrategyConfig) -> bool:
+    """Stake/tier cambiati rispetto all'ultimo calcolo combinazioni."""
+    if st.session_state.get(f"{cfg.key}_combo_stale"):
+        return True
+    if supports_tier(cfg.system):
+        rules = active_tier_rules(cfg.key, cfg.system)
+        fp = st.session_state.get(f"{cfg.key}_combo_stakes_fp")
+        if fp and fp != stakes_fingerprint(cfg.key, cfg.system, rules):
+            return True
+    return False
+
+
+def _cached_combo_results(cfg_key: str) -> pd.DataFrame:
+    df = st.session_state.get(_combo_results_key(cfg_key))
+    return df if df is not None else pd.DataFrame()
+
+
+def _compute_pattern_combos(
+    cfg: StrategyConfig,
+    patterns: list[str],
+    df_raw: pd.DataFrame,
+    *,
+    progress_callback=None,
+) -> pd.DataFrame:
+    if supports_tier(cfg.system):
+        tier_rules = active_tier_rules(cfg.key, cfg.system)
+        sys_df = df_raw[df_raw["system"] == cfg.system].copy() if "system" in df_raw.columns else df_raw
+        combo_df = optimize_tier_pattern_combos(
+            sys_df,
+            cfg.system,
+            tier_rules,
+            patterns=patterns,
+            progress_callback=progress_callback,
+        )
+        st.session_state[f"{cfg.key}_combo_stakes_fp"] = stakes_fingerprint(cfg.key, cfg.system, tier_rules)
+        st.session_state[f"{cfg.key}_combo_stakes_label"] = format_stakes_summary(cfg.key, cfg.system, tier_rules)
+        st.session_state[f"{cfg.key}_combo_stale"] = False
+    elif cfg.optimize_combos:
+        combo_df = cfg.optimize_combos(df_raw)
+    else:
+        combo_df = optimize_pattern_combos(
+            df_raw,
+            lambda d, p: cfg.run_backtest(d, p),
+            patterns=patterns,
+            system=cfg.system,
+        )
+    return combo_df
+
+
+def _ensure_pattern_combos(
+    cfg: StrategyConfig,
+    patterns: list[str],
+    df_raw: pd.DataFrame,
+    *,
+    force: bool = False,
+) -> pd.DataFrame:
+    """Calcola combinazioni solo su richiesta esplicita (evita blocchi al caricamento tab)."""
+    combo_key = _combo_results_key(cfg.key)
+    if not patterns or cfg.key == "combined":
+        return _cached_combo_results(cfg.key)
+
+    if not _needs_combo_recompute(cfg, patterns, force=force):
+        return _cached_combo_results(cfg.key)
+
+    n_combos = count_pattern_combos(len(patterns))
+    progress = st.progress(0.0, text="Calcolo combinazioni…") if n_combos > 64 else None
+
+    def _on_progress(p: float):
+        if progress is not None:
+            progress.progress(p, text=f"Calcolo combinazioni… {int(p * 100)}%")
+
+    try:
+        combo_df = _compute_pattern_combos(
+            cfg,
+            patterns,
+            df_raw,
+            progress_callback=_on_progress if progress else None,
+        )
+        st.session_state[combo_key] = combo_df
+        if combo_df is not None and not combo_df.empty:
+            if not st.session_state.get(active_patterns_key(cfg.key)):
+                best = combo_df.sort_values("score", ascending=False).iloc[0]
+                pats = patterns_from_combo_row(best)
+                set_active_combo(cfg.key, pats, str(best.get("combo", "")))
+        _persist_combo_state(cfg.key)
+    except Exception as exc:
+        st.error(f"Errore nel calcolo combinazioni: {exc}")
+    finally:
+        if progress is not None:
+            progress.empty()
+
+    return _cached_combo_results(cfg.key)
+
+
+def _stakes_label_for_combo(cfg: StrategyConfig) -> str:
+    if supports_tier(cfg.system):
+        return st.session_state.get(f"{cfg.key}_combo_stakes_label") or format_stakes_summary(cfg.key, cfg.system)
+    return ""
+
+
+def _render_combo_size_overview(
+    combo_df: pd.DataFrame,
+    patterns: list[str],
+    cfg: StrategyConfig,
+):
+    """Mostra tutte le combinazioni raggruppate: n, n-1, …, 1 pattern."""
+    if combo_df is None or combo_df.empty or not patterns:
+        return
+
+    n = len(patterns)
+    groups = split_combos_by_n(combo_df, n)
+    stakes_label = _stakes_label_for_combo(cfg)
+    expected = combos_per_size(n)
+    total_expected = count_pattern_combos(n)
+
+    st.markdown("#### Tutte le combinazioni per dimensione")
+    parts = [
+        f"**{size}** → {len(groups.get(size, []))}/{expected[size]}"
+        for size in range(n, 0, -1)
+    ]
+    st.caption(
+        f"**{len(combo_df):,}** risultati su **{total_expected:,}** combinazioni possibili "
+        f"({' · '.join(parts)})"
+    )
+
+    for size in range(n, 0, -1):
+        sub = groups.get(size)
+        count = 0 if sub is None else len(sub)
+        title = f"{size} pattern — {count}/{expected[size]} combinazioni"
+        with st.expander(title, expanded=(size == n)):
+            if sub is None or sub.empty:
+                st.caption("Nessun risultato.")
+            else:
+                st.dataframe(
+                    combo_display_columns(sub, stakes_label=stakes_label),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+
+def _filter_combo_view(combo_df: pd.DataFrame, size_filter: str, n_patterns: int) -> pd.DataFrame:
+    if size_filter == "Tutte le dimensioni":
+        return combo_df
+    if size_filter.endswith("pattern"):
+        try:
+            size = int(size_filter.split()[0])
+            return combo_df[combo_df["n_patterns"] == size]
+        except ValueError:
+            return combo_df
+    return combo_df
+
+
+def _combo_size_filter_options(n_patterns: int) -> list[str]:
+    return ["Tutte le dimensioni"] + [f"{k} pattern" for k in range(n_patterns, 0, -1)]
 
 
 def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataFrame):
@@ -207,16 +442,10 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
             "**Passo 3/3** — Con tier e stake già impostati (passi 1–2), "
             "trova **quali pattern includere**. Profit/DD usano gli stake attive."
         )
-        combo_fp = st.session_state.get(f"{cfg.key}_combo_stakes_fp")
-        if combo_fp and combo_fp != stakes_fingerprint(cfg.key, cfg.system, rules):
+        if _combo_is_outdated(cfg):
             st.warning(
-                "⚠️ Gli stake sono cambiati dall'ultimo calcolo combinazioni. "
-                "Clicca **Calcola combinazioni** per aggiornare i numeri in tabella."
-            )
-        elif st.session_state.get(f"{cfg.key}_combo_stale"):
-            st.warning(
-                "⚠️ Hai applicato una nuova configurazione stake. "
-                "Clicca **Calcola combinazioni** per vedere i risultati aggiornati."
+                "⚠️ Tier o stake cambiati dall'ultimo calcolo. "
+                "Clicca **Ricalcola combinazioni** per aggiornare tutti i subset."
             )
 
     if not patterns:
@@ -227,37 +456,31 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
         )
         return
 
-    n_combos = (2 ** len(patterns) - 1) if patterns else 0
-    st.caption(
-        f"Fino a {n_combos} combinazioni testate. Score = Profit + 0.6 × Max DD."
-    )
+    n_combos = count_pattern_combos(len(patterns)) if patterns else 0
+    if n_combos:
+        per_size = combos_per_size(len(patterns))
+        breakdown = " + ".join(f"{k}×{v}" for k, v in sorted(per_size.items(), reverse=True))
+        st.caption(
+            f"**{n_combos:,}** combinazioni totali ({breakdown}). "
+            "Score = Profit + 0.6 × Max DD."
+            + (" · calcolo ottimizzato tier" if supports_tier(cfg.system) else "")
+        )
 
-    combo_key = f"{cfg.key}_combo_results"
+    combo_key = _combo_results_key(cfg.key)
+    has_cached = not _cached_combo_results(cfg.key).empty
+    btn_label = "🔄 Ricalcola combinazioni" if has_cached else "🔍 Calcola tutte le combinazioni"
 
-    if st.button("🔍 Calcola combinazioni", type="primary", key=f"{cfg.key}_run_combos"):
+    if st.button(btn_label, type="primary", key=f"{cfg.key}_run_combos"):
+        n_combos = count_pattern_combos(len(patterns)) if patterns else 0
+        progress = st.progress(0.0, text="Calcolo combinazioni…") if n_combos > 64 else None
+
+        def _on_progress(p: float):
+            if progress is not None:
+                progress.progress(p, text=f"Calcolo combinazioni… {int(p * 100)}%")
+
         with st.spinner("Calcolo in corso..."):
             try:
-                if supports_tier(cfg.system):
-                    tier_rules = active_tier_rules(cfg.key, cfg.system)
-                    sys_df = df_raw[df_raw["system"] == cfg.system].copy() if "system" in df_raw.columns else df_raw
-                    combo_df = optimize_pattern_combos(
-                        sys_df,
-                        lambda d, p: cfg.run_backtest(d, p, tier_rules=tier_rules),
-                        patterns=patterns,
-                    )
-                    st.session_state[f"{cfg.key}_combo_stakes_fp"] = stakes_fingerprint(cfg.key, cfg.system, tier_rules)
-                    st.session_state[f"{cfg.key}_combo_stakes_label"] = format_stakes_summary(cfg.key, cfg.system, tier_rules)
-                    st.session_state[f"{cfg.key}_combo_stale"] = False
-                elif cfg.optimize_combos:
-                    combo_df = cfg.optimize_combos(df_raw)
-                else:
-                    combo_df = optimize_pattern_combos(
-                        df_raw,
-                        lambda d, p: cfg.run_backtest(d, p),
-                        patterns=patterns,
-                        system=cfg.system,
-                    )
-                st.session_state[combo_key] = combo_df
+                combo_df = _ensure_pattern_combos(cfg, patterns, df_raw, force=True)
                 if combo_df is not None and not combo_df.empty:
                     best = combo_df.sort_values("score", ascending=False).iloc[0]
                     pats = patterns_from_combo_row(best)
@@ -270,10 +493,16 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
                     st.warning("Nessuna combinazione ha prodotto risultati.")
             except Exception as exc:
                 st.error(f"Errore nel calcolo combinazioni: {exc}")
+            finally:
+                if progress is not None:
+                    progress.empty()
 
-    combo_df = st.session_state.get(combo_key)
-    if combo_df is None or combo_df.empty:
-        st.info("Clicca **Calcola combinazioni** per avviare la ricerca.")
+    combo_df = _cached_combo_results(cfg.key)
+    if combo_df.empty:
+        st.info(
+            "Clicca **Calcola tutte le combinazioni** per testare ogni subset di pattern "
+            "(da tutti i file fino ai singoli)."
+        )
         return
 
     if supports_tier(cfg.system):
@@ -303,29 +532,27 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
         ["score", "profit", "max_dd", "calmar", "winrate", "trades"],
         key=f"{cfg.key}_combo_sort",
     )
+    n_pat = len(patterns)
+    size_filter = st.selectbox(
+        "Filtra per dimensione",
+        _combo_size_filter_options(n_pat),
+        key=f"{cfg.key}_combo_size_filter",
+    )
     ascending = sort_by == "max_dd"
-    view = combo_df.sort_values(sort_by, ascending=ascending).copy()
-    view["winrate"] = (view["winrate"] * 100).round(1)
-    if supports_tier(cfg.system):
-        show_cols = ["combo", "stakes_used", "n_patterns", "profit", "max_dd", "score", "calmar", "trades", "winrate"]
-        view["stakes_used"] = st.session_state.get(f"{cfg.key}_combo_stakes_label") or format_stakes_summary(cfg.key, cfg.system)
-    else:
-        show_cols = ["combo", "n_patterns", "profit", "max_dd", "score", "calmar", "trades", "winrate"]
-    show_cols = [c for c in show_cols if c in view.columns]
-    view = view[show_cols]
-    col_names = {
-        "combo": "Combinazione",
-        "stakes_used": "Stake T1/T2/T3/T4",
-        "n_patterns": "N° pattern",
-        "profit": "Profit (U)",
-        "max_dd": "Max DD (U)",
-        "score": "Score",
-        "calmar": "Calmar",
-        "trades": "Trade",
-        "winrate": "Winrate %",
-    }
-    view.columns = [col_names.get(c, c) for c in show_cols]
-    st.dataframe(view, use_container_width=True, hide_index=True)
+    view = combo_df.sort_values(
+        ["n_patterns", sort_by, "profit"],
+        ascending=[False, ascending, False],
+    ).copy()
+    view = _filter_combo_view(view, size_filter, n_pat)
+    stakes_label = _stakes_label_for_combo(cfg)
+    st.caption(f"**{len(view):,}** combinazioni mostrate su **{len(combo_df):,}** totali")
+    from ui.st_widgets import dataframe_kwargs
+    st.dataframe(
+        combo_display_columns(view, stakes_label=stakes_label),
+        use_container_width=True,
+        hide_index=True,
+        **dataframe_kwargs(len(view)),
+    )
 
     st.download_button(
         "📥 Scarica CSV combinazioni",
@@ -335,17 +562,19 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
         key=f"{cfg.key}_dl_combo",
     )
 
-    active_label = get_active_combo_label(cfg.key)
-    if active_label:
-        st.info(f"**Riepilogo in alto:** {active_label}")
-
     col_a, col_b = st.columns([3, 1])
+    combo_options = combo_df["combo"].tolist()
+    _sync_combo_summary_pick(cfg.key, combo_options)
     with col_a:
+        active_label = get_active_combo_label(cfg.key)
+        default_index = (
+            combo_options.index(active_label)
+            if active_label in combo_options else 0
+        )
         sel_combo = st.selectbox(
             "Combinazione per riepilogo",
-            combo_df["combo"].tolist(),
-            index=combo_df["combo"].tolist().index(active_label)
-            if active_label in combo_df["combo"].tolist() else 0,
+            combo_options,
+            index=default_index,
             key=f"{cfg.key}_combo_summary_pick",
         )
     with col_b:
@@ -355,6 +584,10 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
             row = combo_df[combo_df["combo"] == sel_combo].iloc[0]
             set_active_combo(cfg.key, patterns_from_combo_row(row), sel_combo)
             st.success(f"Riepilogo aggiornato: **{sel_combo}**")
+
+    active_label = get_active_combo_label(cfg.key)
+    if active_label:
+        st.info(f"**Riepilogo in alto:** {active_label}")
 
     pat_row = combo_df[combo_df["combo"] == sel_combo].iloc[0]
 
@@ -377,13 +610,73 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
             detail_trades = cfg.run_backtest(df_raw, pat_tuple, tier_rules=active_tier_rules(cfg.key, cfg.system))
         else:
             detail_trades = cfg.run_backtest(df_raw, pat_tuple)
-    _render_ccs_backtest(detail_trades, sel_combo, cfg.key, section="combo")
+    _render_ccs_backtest(detail_trades, sel_combo, cfg.key, section="combo", system=cfg.system)
 
 
 @st.fragment
 def _render_combo_tab_fragment(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataFrame):
     """Fragment: click su Calcola combinazioni non resetta la tab attiva."""
-    _render_combo_tab(cfg, patterns, df_raw)
+    try:
+        _render_combo_tab(cfg, patterns, df_raw)
+    except Exception as exc:
+        st.error(f"Errore tab combinazioni: {exc}")
+
+
+def _render_opt_pick_comparison(
+    baseline: dict,
+    picked: pd.Series,
+    rank: int,
+    format_params: Callable,
+):
+    """Confronto metriche tra baseline e configurazione selezionata."""
+    st.markdown(f"### Confronto — baseline vs selezionato **#{rank}**")
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric(
+        "Profit (U)",
+        f"{picked['profit']:.2f}",
+        f"{picked['profit'] - baseline['profit']:+.2f}",
+    )
+    m2.metric(
+        "Max DD (U)",
+        f"{picked['max_dd']:.2f}",
+        f"{picked['max_dd'] - baseline['max_dd']:+.2f}",
+        delta_color="inverse",
+    )
+    m3.metric(
+        "Score",
+        f"{picked['score']:.2f}",
+        f"{picked['score'] - baseline['score']:+.2f}",
+    )
+    m4.metric(
+        "Calmar",
+        f"{picked['calmar']:.2f}",
+        f"{picked['calmar'] - baseline.get('calmar', 0):+.2f}",
+    )
+
+    m5, m6 = st.columns(2)
+    m5.metric("Trade", int(picked["trades"]))
+    m6.metric("Winrate", f"{picked['winrate'] * 100:.1f}%")
+    wr_delta = (picked["winrate"] - baseline.get("winrate", 0)) * 100
+    m6.caption(f"Δ winrate: {wr_delta:+.1f} pp")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**Baseline (attuale)**")
+        st.write(
+            f"Profit **{baseline['profit']:.2f} U** · DD **{baseline['max_dd']:.2f} U** · "
+            f"Score **{baseline['score']:.2f}**"
+        )
+        params = baseline.get("params", baseline)
+        st.caption(format_params(params))
+    with c2:
+        st.markdown(f"**Selezionato (#{rank})**")
+        st.write(
+            f"Profit **{picked['profit']:.2f} U** · DD **{picked['max_dd']:.2f} U** · "
+            f"Score **{picked['score']:.2f}** · Calmar **{picked['calmar']:.2f}**"
+        )
+        params = picked.get("params", picked)
+        st.caption(format_params(params))
 
 
 def _render_stake_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataFrame):
@@ -397,7 +690,23 @@ def _render_stake_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
     iterations = st.slider("Iterazioni", 500, 5000, 2000, 500, key=f"{cfg.key}_opt_iter")
     aggressive = False
     max_dd = -999.0
-    if cfg.key in ("sh0", "sh1", "sh2"):
+    dd_weight = 0.6
+    use_tier = bool(cfg.system and supports_tier(cfg.system))
+
+    if use_tier:
+        c1, c2 = st.columns(2)
+        dd_weight = c1.slider(
+            "Penalità DD nello score", 0.2, 1.2, 0.6, 0.05,
+            key=f"{cfg.key}_opt_dd_weight",
+        )
+        max_dd = c2.number_input(
+            "Filtro DD minimo (U)", value=-999.0, step=1.0, key=f"{cfg.key}_opt_dd",
+        )
+        st.caption(
+            f"Stake attuali: **{format_stakes_summary(cfg.key, cfg.system)}** · "
+            "ottimizzazione su backtest **tier** (T1/T2/T3/T4)."
+        )
+    elif cfg.key in ("sh0", "sh1", "sh2"):
         dd_default = -18.0
         max_dd = st.number_input("Filtro DD minimo", value=dd_default, step=1.0, key=f"{cfg.key}_opt_dd")
     elif cfg.key == "o15":
@@ -408,52 +717,104 @@ def _render_stake_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
         with st.spinner(f"Test {iterations} configurazioni..."):
             pat = tuple(opt_patterns) if opt_patterns else None
             dd_limit = None if max_dd <= -900 else max_dd
-            kwargs = {"iterations": iterations}
-            if cfg.key == "combined":
+            if use_tier:
+                from core.tier_stake_optimizer import format_stake_combo, optimize_tier_stakes
+
+                rules = active_tier_rules(cfg.key, cfg.system)
+                baseline, results = optimize_tier_stakes(
+                    df_raw, cfg.system, rules,
+                    patterns=pat,
+                    dd_weight=dd_weight,
+                    max_dd_limit=dd_limit,
+                    include_random=True,
+                    random_iterations=iterations,
+                )
+                st.session_state[f"{cfg.key}_opt_format"] = "tier"
+            elif cfg.key == "combined":
                 baseline, results = cfg.optimize_stake(cfg.df_grouped, df_raw, iterations=iterations)
+                st.session_state[f"{cfg.key}_opt_format"] = "legacy"
             elif cfg.key == "o15":
                 baseline, results = cfg.optimize_stake(
                     df_raw, patterns=pat, iterations=iterations,
                     aggressive=aggressive, max_dd_limit=dd_limit,
                 )
+                st.session_state[f"{cfg.key}_opt_format"] = "legacy"
             elif cfg.key in ("sh0", "sh1", "sh2"):
                 baseline, results = cfg.optimize_stake(
                     df_raw, patterns=pat, iterations=iterations, max_dd_limit=dd_limit,
                 )
+                st.session_state[f"{cfg.key}_opt_format"] = "legacy"
             else:
                 baseline, results = cfg.optimize_stake(df_raw, patterns=pat, iterations=iterations)
+                st.session_state[f"{cfg.key}_opt_format"] = "legacy"
             st.session_state[f"{cfg.key}_opt_baseline"] = baseline
             st.session_state[f"{cfg.key}_opt_results"] = results
+            if results is not None and not results.empty:
+                best = results.iloc[0]
+                st.success(
+                    f"✅ **{len(results)}** configurazioni testate. "
+                    f"Migliore per score: profit **{best['profit']:.1f}U** · DD **{best['max_dd']:.1f}U**"
+                )
+            elif results is not None and results.empty:
+                st.warning("Nessun risultato con i filtri impostati.")
 
     baseline = st.session_state.get(f"{cfg.key}_opt_baseline")
     results = st.session_state.get(f"{cfg.key}_opt_results")
+    opt_format = st.session_state.get(f"{cfg.key}_opt_format", "legacy")
+    if use_tier:
+        from core.tier_stake_optimizer import format_stake_combo
+        format_fn = format_stake_combo
+    else:
+        format_fn = cfg.format_params
 
     if baseline and results is not None and not results.empty:
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("**Baseline (attuale)**")
-            st.write(
-                f"Profit {baseline['profit']:.2f} U · DD {baseline['max_dd']:.2f} U · "
-                f"Score {baseline['score']:.2f}"
-            )
-            st.caption(cfg.format_params(baseline["params"]))
-        with c2:
-            best = results.iloc[0]
-            st.markdown("**Migliore (#1 per score)**")
-            st.write(
-                f"Profit {best['profit']:.2f} U · DD {best['max_dd']:.2f} U · "
-                f"Score {best['score']:.2f} · Calmar {best['calmar']:.2f}"
-            )
-            st.caption(cfg.format_params(best["params"]))
+        show = results.copy()
+        show["winrate_pct"] = (show["winrate"] * 100).round(1)
+        if opt_format == "tier":
+            show["params_str"] = show.apply(format_stake_combo, axis=1)
+        else:
+            show["params_str"] = show["params"].apply(cfg.format_params)
+        show["#"] = range(1, len(show) + 1)
 
-        show = results.head(20).copy()
-        show["winrate"] = (show["winrate"] * 100).round(1)
-        show["params_str"] = show["params"].apply(cfg.format_params)
+        table_cols = ["#", "profit", "max_dd", "score", "calmar", "trades", "winrate_pct", "params_str"]
+        n_show = len(show)
+        st.markdown(f"**{n_show:,}** configurazioni in tabella")
         st.dataframe(
-            show[["profit", "max_dd", "score", "calmar", "trades", "winrate", "params_str"]],
+            show[table_cols].rename(columns={
+                "#": "Rank", "profit": "Profit (U)", "max_dd": "Max DD (U)",
+                "score": "Score", "calmar": "Calmar", "trades": "Trade",
+                "winrate_pct": "Winrate %", "params_str": "Parametri",
+            }),
             use_container_width=True,
             hide_index=True,
+            **dataframe_kwargs(n_show),
         )
+
+        default_rank = int(st.session_state.get(f"{cfg.key}_opt_pick_rank", 1))
+        default_rank = max(1, min(default_rank, len(results)))
+        sel_rank = st.number_input(
+            "Seleziona risultato (#)",
+            min_value=1,
+            max_value=len(results),
+            value=default_rank,
+            step=1,
+            key=f"{cfg.key}_opt_pick_rank",
+            help="Numero Rank dalla tabella sopra.",
+        )
+        picked = results.iloc[int(sel_rank) - 1]
+        _render_opt_pick_comparison(baseline, picked, int(sel_rank), format_fn)
+
+        if use_tier and st.button(
+            "✅ Applica stake selezionate",
+            type="primary",
+            key=f"{cfg.key}_apply_opt_stakes",
+        ):
+            apply_stake_rules(cfg.key, cfg.system, picked.to_dict())
+            st.success(
+                f"Stake applicate: **{format_stake_combo(picked)}**. "
+                "Opzionale: ricalcola **Combinazioni pattern**."
+            )
+
         st.download_button(
             "📥 Scarica CSV ottimizzazione",
             results.to_csv(index=False).encode("utf-8"),
@@ -467,7 +828,18 @@ def _render_stake_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
         st.info(f"Clicca **{cfg.stake_label}** per avviare la ricerca.")
 
 
+@st.fragment
+def _render_stake_tab_fragment(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataFrame):
+    """Fragment: click su Ottimizza stake non resetta la tab attiva."""
+    try:
+        _render_stake_tab(cfg, patterns, df_raw)
+    except Exception as exc:
+        st.error(f"Errore ottimizzazione stake: {exc}")
+
+
 def show_strategy_tab(cfg: StrategyConfig):
+    hydrate_session(cfg.key, st.session_state)
+
     st.markdown(STRATEGY_CSS, unsafe_allow_html=True)
     st.markdown(f"### {cfg.title}")
     st.caption(cfg.data_hint)
@@ -508,12 +880,41 @@ def show_strategy_tab(cfg: StrategyConfig):
         tab_bt, tab_combo, tab_opt = st.tabs(list(SECTIONS))
         tab_tier = tab_stake_sim = None
 
-    if st.session_state.get(f"{cfg.key}_combo_results") is not None:
-        done = st.session_state.get(f"{cfg.key}_combo_results")
+    if st.session_state.get(_combo_results_key(cfg.key)) is not None:
+        done = st.session_state.get(_combo_results_key(cfg.key))
         if done is not None and not done.empty:
-            st.caption(f"Combinazioni pronte: **{len(done)}** risultati (tab **Combinazioni pattern**)")
+            label = get_active_combo_label(cfg.key)
+            if label:
+                st.caption(
+                    f"Combinazioni salvate: **{len(done)}** risultati · "
+                    f"combo attiva **{label}** (persiste dopo refresh)"
+                )
+            else:
+                st.caption(f"Combinazioni salvate: **{len(done)}** risultati (persiste dopo refresh)")
+
+    pat_list_for_combos: list[str] = []
+    if cfg.system:
+        pat_list_for_combos = list_available_patterns(df_raw, cfg.system)
+    elif cfg.key != "combined":
+        pat_list_for_combos = patterns
+
+    combo_df_cached = _cached_combo_results(cfg.key)
 
     with tab_bt:
+        if _combo_is_outdated(cfg):
+            st.warning(
+                "⚠️ Tier o stake cambiati dopo l'ultimo calcolo combinazioni. "
+                "I numeri sotto possono essere datati — vai su **Combinazioni pattern** e ricalcola."
+            )
+        if pat_list_for_combos and not combo_df_cached.empty:
+            _render_combo_size_overview(combo_df_cached, pat_list_for_combos, cfg)
+        elif pat_list_for_combos:
+            st.caption(
+                "Apri **Combinazioni pattern** e clicca **Calcola tutte le combinazioni** "
+                "per vedere ogni subset (N, N-1, …, 1 file)."
+            )
+
+        sel_patterns: list[str] | None = None
         if cfg.system and patterns:
             pat_options = list_available_patterns(df_raw, cfg.system)
             _sync_bt_patterns_widget(cfg.key, pat_options)
@@ -527,30 +928,45 @@ def show_strategy_tab(cfg: StrategyConfig):
                 options=pat_options,
                 key=bt_key,
             )
-            pat = tuple(sel) if sel else None
-            tier_rules = active_tier_rules(cfg.key, cfg.system) if supports_tier(cfg.system) else None
-            if supports_tier(cfg.system):
-                df_trades = cfg.run_backtest(df_raw, pat, tier_rules=tier_rules)
-            else:
-                df_trades = cfg.run_backtest(df_raw, pat)
-            if st.button("Usa questi pattern nel riepilogo", key=f"{cfg.key}_bt_apply_summary"):
-                set_active_combo(
-                    cfg.key,
-                    pat,
-                    " + ".join(sel) if sel else "Tutti i pattern",
+            sel_patterns = list(sel) if sel else None
+
+        c_run, c_apply = st.columns([1, 1])
+        with c_run:
+            run_bt = st.button(
+                "▶️ Esegui backtest",
+                type="primary",
+                key=f"{cfg.key}_run_bt",
+            )
+        with c_apply:
+            if cfg.system and patterns:
+                if st.button("Usa pattern nel riepilogo", key=f"{cfg.key}_bt_apply_summary"):
+                    set_active_combo(
+                        cfg.key,
+                        tuple(sel_patterns) if sel_patterns else None,
+                        " + ".join(sel) if sel else "Tutti i pattern",
+                    )
+                    st.success("Pattern applicati al riepilogo in alto.")
+
+        if run_bt:
+            with st.spinner("Backtest in corso..."):
+                st.session_state[bt_trades_key(cfg.key)] = _run_strategy_backtest(
+                    cfg, df_raw, sel_patterns,
                 )
-                st.rerun()
-        elif cfg.key == "combined":
-            df_trades = cfg.run_backtest(df_raw)
+
+        df_trades = st.session_state.get(bt_trades_key(cfg.key))
+        if df_trades is None:
+            st.info(
+                "**Backtest non ancora eseguito.**\n\n"
+                "1. Scegli i pattern (opzionale)\n"
+                "2. Clicca **▶️ Esegui backtest**\n"
+                "3. Per tutte le combo pattern → tab **🧩 Combinazioni pattern**"
+            )
         else:
-            tier_rules = active_tier_rules(cfg.key, cfg.system) if supports_tier(cfg.system) else None
             if supports_tier(cfg.system):
-                df_trades = cfg.run_backtest(df_raw, tier_rules=tier_rules)
-            else:
-                df_trades = cfg.run_backtest(df_raw)
-        if supports_tier(cfg.system):
-            show_tier_metodo_panel(cfg.key, cfg.system, cfg.title.split("—")[0].strip(), df_trades, df_raw)
-        _render_ccs_backtest(df_trades, cfg.title, cfg.key, section="bt")
+                show_tier_metodo_panel(
+                    cfg.key, cfg.system, cfg.title.split("—")[0].strip(), df_trades, df_raw,
+                )
+            _render_ccs_backtest(df_trades, cfg.title, cfg.key, section="bt", system=cfg.system)
 
     with tab_combo:
         pat_list = list_available_patterns(df_raw, cfg.system) if cfg.system else patterns
@@ -558,12 +974,12 @@ def show_strategy_tab(cfg: StrategyConfig):
 
     with tab_opt:
         pat_list = list_available_patterns(df_raw, cfg.system) if cfg.system else []
-        _render_stake_tab(cfg, pat_list, df_raw)
+        _render_stake_tab_fragment(cfg, pat_list, df_raw)
 
     if tab_tier is not None:
         with tab_tier:
-            render_tier_optimizer(cfg.key, cfg.system, cfg.title.split("—")[0].strip(), df_raw)
+            render_tier_optimizer_fragment(cfg.key, cfg.system, cfg.title.split("—")[0].strip(), df_raw)
 
     if tab_stake_sim is not None:
         with tab_stake_sim:
-            render_stake_simulator(cfg.key, cfg.system, cfg.title.split("—")[0].strip(), df_raw)
+            render_stake_simulator_fragment(cfg.key, cfg.system, cfg.title.split("—")[0].strip(), df_raw)

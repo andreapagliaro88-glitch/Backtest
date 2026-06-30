@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-from compound_config import INITIAL_BANKROLL, PROFIT_ODDS
+from compound_config import INITIAL_BANKROLL
+from core.tier_config import profit_odds_for
 from core.controlled_compounding import ControlledCompounding
 from core.strategy_engine import iter_combined_trades
 
@@ -27,7 +28,8 @@ def trades_to_ccs_inputs(trades) -> list[dict]:
             "date": t.get("date"),
             "system": system,
             "vinto": bool(t["vinto"]),
-            "profit_odds": PROFIT_ODDS[system],
+            "profit_odds": profit_odds_for(system),
+            "stake_u": float(t.get("stake_u") or 1.0),
             "skipped": False,
         })
     return rows
@@ -51,7 +53,8 @@ def unit_backtest_df_to_ccs_inputs(df_trades: pd.DataFrame) -> list[dict]:
             "date": row.get("date"),
             "system": system,
             "vinto": vinto,
-            "profit_odds": PROFIT_ODDS[system],
+            "profit_odds": profit_odds_for(system),
+            "stake_u": stake,
             "skipped": False,
         })
     return rows
@@ -118,17 +121,18 @@ def format_trades_eur_display(df: pd.DataFrame) -> pd.DataFrame:
         "date": "Data",
         "system": "Strategia",
         "tier_label": "Tier",
+        "stake": "Stake (U)",
         "n_engines": "Engine",
         "ingresso": "Ingresso",
         "valore_1u": "1U (€)",
-        "stake_eur": "Stake (€)",
+        "stake_eur": "Stake CCS (€)",
         "profit_eur": "Profitto (€)",
         "bankroll_eur": "Bankroll (€)",
         "dd_eur": "DD (€)",
         "esito": "Esito",
     }
     order = [
-        "date", "system", "tier_label", "Pattern", "n_engines", "ingresso",
+        "date", "system", "tier_label", "Pattern", "n_engines", "stake", "ingresso",
         "valore_1u", "stake_eur", "profit_eur", "bankroll_eur", "dd_eur", "esito",
     ]
     rename = {k: v for k, v in col_map.items() if k in out.columns}
@@ -143,12 +147,13 @@ def run_ccs_on_trades(trades, initial_bankroll: float = INITIAL_BANKROLL) -> tup
         if t.get("skipped"):
             continue
         system = t["system"]
-        odds = PROFIT_ODDS[system]
+        odds = profit_odds_for(system)
         ccs.settle_trade(
             vinto=bool(t["vinto"]),
             profit_odds=odds,
             date=t.get("date"),
             system=system,
+            stake_u=float(t.get("stake_u") or 1.0),
         )
 
     records = []
@@ -158,7 +163,7 @@ def run_ccs_on_trades(trades, initial_bankroll: float = INITIAL_BANKROLL) -> tup
         records.append({
             "date": tr.date,
             "system": tr.system,
-            "stake_u": 1.0,
+            "stake_u": tr.stake_u,
             "unit_eur": tr.unit_eur,
             "stake_eur": tr.stake_eur,
             "profit_eur": tr.profit_eur,

@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 PLOT_LAYOUT = dict(
@@ -29,10 +29,121 @@ def _hex_rgba(hex_color: str, alpha: float = 0.15) -> str:
 
 
 def style_figure(fig, height: int = 320, showlegend: bool = False):
-    fig.update_layout(**PLOT_LAYOUT, height=height, showlegend=showlegend)
-    fig.update_xaxes(**PLOT_LAYOUT["xaxis"])
-    fig.update_yaxes(**PLOT_LAYOUT["yaxis"])
+    """Applica tema scuro senza template Plotly (evita reset colori tracce)."""
+    fig.update_layout(
+        paper_bgcolor=PLOT_LAYOUT["paper_bgcolor"],
+        plot_bgcolor=PLOT_LAYOUT["plot_bgcolor"],
+        font=PLOT_LAYOUT["font"],
+        margin=PLOT_LAYOUT["margin"],
+        title_font=dict(color="#f0f3f6", size=14),
+        height=height,
+        showlegend=showlegend,
+    )
+    fig.update_xaxes(
+        gridcolor="#30363d",
+        zerolinecolor="#30363d",
+        title_font=dict(color="#8b949e"),
+        tickfont=dict(color="#8b949e"),
+    )
+    fig.update_yaxes(
+        gridcolor="#30363d",
+        zerolinecolor="#30363d",
+        title_font=dict(color="#8b949e"),
+        tickfont=dict(color="#8b949e"),
+    )
     return fig
+
+
+def _chart_key(key: str | None, kind: str, title: str, *parts: str) -> str:
+    if key:
+        return key
+    slug = re.sub(r"[^\w]+", "_", f"{kind}_{title}_{'_'.join(parts)}".lower()).strip("_")
+    return slug[:120] or kind
+
+
+def _trade_index(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.reset_index(drop=True).copy()
+    out["trade_n"] = range(1, len(out) + 1)
+    return out
+
+
+def _prepare_xy(df: pd.DataFrame, x: str, y: str) -> pd.DataFrame | None:
+    if df.empty or y not in df.columns:
+        return None
+    out = _trade_index(df) if x == "trade_n" and "trade_n" not in df.columns else df.reset_index(drop=True).copy()
+    if x not in out.columns:
+        return None
+    out[y] = pd.to_numeric(out[y], errors="coerce")
+    out[x] = out[x] if x == "trade_n" else out[x]
+    out = out.dropna(subset=[y])
+    if out.empty:
+        return None
+    return out
+
+
+def _show_chart(fig, height: int, key: str | None, kind: str, title: str, *key_parts: str):
+    chart_key = _chart_key(key, kind, title, *key_parts)
+    st.plotly_chart(
+        style_figure(fig, height),
+        use_container_width=True,
+        config=PLOTLY_CONFIG,
+        key=chart_key,
+    )
+
+
+def plot_line(
+    df: pd.DataFrame,
+    y: str,
+    title: str,
+    x: str = "trade_n",
+    height: int = 320,
+    color: str = "#58a6ff",
+    fill: bool = False,
+    fill_to_zero: bool = False,
+    key: str | None = None,
+):
+    plot_df = _prepare_xy(df, x, y)
+    if plot_df is None:
+        st.info(f"Nessun dato per «{title}».")
+        return
+
+    use_fill = fill or fill_to_zero
+    fig = go.Figure(
+        go.Scatter(
+            x=plot_df[x],
+            y=plot_df[y],
+            mode="lines",
+            line=dict(color=color, width=2),
+            fill="tozeroy" if use_fill else None,
+            fillcolor=_hex_rgba(color, 0.22) if use_fill else None,
+        )
+    )
+    fig.update_layout(title=title)
+    _show_chart(fig, height, key, "line", title, y, x)
+
+
+def plot_bar(
+    df: pd.DataFrame,
+    x: str,
+    y: str,
+    title: str,
+    height: int = 280,
+    color: str = "#58a6ff",
+    key: str | None = None,
+):
+    if df.empty or x not in df.columns or y not in df.columns:
+        st.info(f"Nessun dato per «{title}».")
+        return
+    plot_df = df.copy()
+    plot_df[y] = pd.to_numeric(plot_df[y], errors="coerce")
+    plot_df = plot_df.dropna(subset=[y])
+    if plot_df.empty:
+        st.info(f"Nessun dato valido per «{title}».")
+        return
+
+    fig = go.Figure(go.Bar(x=plot_df[x], y=plot_df[y], marker_color=color))
+    fig.update_layout(title=title)
+    _show_chart(fig, height, key, "bar", title, y, x)
 
 
 def plot_scatter(
@@ -50,106 +161,53 @@ def plot_scatter(
         st.info(f"Nessun dato per «{title}».")
         return
 
-    plot_df = df.drop(columns=["rules"], errors="ignore")
-    kwargs = dict(x=x, y=y, labels=labels or {})
-    if color and color in plot_df.columns:
-        kwargs["color"] = color
-        kwargs["color_continuous_scale"] = "Turbo"
-    if hover_data:
-        kwargs["hover_data"] = [c for c in hover_data if c in plot_df.columns]
+    plot_df = df.drop(columns=["rules"], errors="ignore").copy()
+    for col in (x, y, color):
+        if col and col in plot_df.columns:
+            plot_df[col] = pd.to_numeric(plot_df[col], errors="coerce")
+    plot_df = plot_df.dropna(subset=[x, y])
+    if plot_df.empty:
+        st.info(f"Nessun dato valido per «{title}».")
+        return
 
-    fig = px.scatter(plot_df, **kwargs, opacity=0.9)
-    fig.update_traces(
-        marker=dict(
-            size=10,
-            line=dict(width=1, color="rgba(255,255,255,0.35)"),
-        ),
+    marker_kwargs: dict = dict(
+        size=9,
+        line=dict(width=0.8, color="rgba(255,255,255,0.45)"),
     )
     if color and color in plot_df.columns:
-        fig.update_layout(
-            coloraxis_colorbar=dict(
-                title=dict(text=color.capitalize(), font=dict(color="#8b949e")),
-                tickfont=dict(color="#8b949e"),
-                outlinecolor="#30363d",
-                bgcolor="#161b22",
-            ),
+        fig = go.Figure(
+            go.Scatter(
+                x=plot_df[x],
+                y=plot_df[y],
+                mode="markers",
+                marker=dict(
+                    size=9,
+                    color=plot_df[color],
+                    colorscale="Turbo",
+                    showscale=True,
+                    colorbar=dict(
+                        title=dict(text=color, font=dict(color="#8b949e")),
+                        tickfont=dict(color="#8b949e"),
+                        outlinecolor="#30363d",
+                        bgcolor="#161b22",
+                    ),
+                    line=dict(width=0.8, color="rgba(255,255,255,0.45)"),
+                ),
+                text=plot_df[hover_data[0]] if hover_data and hover_data[0] in plot_df.columns else None,
+                hovertemplate=f"{x}=%{{x}}<br>{y}=%{{y}}<extra></extra>",
+            )
         )
-    fig.update_layout(title=title)
-    chart_key = _chart_key(key, "scatter", title, y, x)
-    st.plotly_chart(
-        style_figure(fig, height, showlegend=bool(color)),
-        use_container_width=True,
-        config=PLOTLY_CONFIG,
-        key=chart_key,
-    )
-
-
-def _trade_index(df: pd.DataFrame) -> pd.DataFrame:
-    out = df.reset_index(drop=True).copy()
-    out["trade_n"] = range(1, len(out) + 1)
-    return out
-
-
-def _chart_key(key: str | None, kind: str, title: str, *parts: str) -> str:
-    if key:
-        return key
-    slug = re.sub(r"[^\w]+", "_", f"{kind}_{title}_{'_'.join(parts)}".lower()).strip("_")
-    return slug[:120] or kind
-
-
-def plot_line(
-    df: pd.DataFrame,
-    y: str,
-    title: str,
-    x: str = "trade_n",
-    height: int = 320,
-    color: str = "#58a6ff",
-    fill: bool = False,
-    key: str | None = None,
-):
-    if df.empty or y not in df.columns:
-        st.info(f"Nessun dato per «{title}».")
-        return
-    if x == "trade_n":
-        df = _trade_index(df)
-    if fill:
-        fig = px.area(df, x=x, y=y)
-        fig.update_traces(line_color=color, fillcolor=_hex_rgba(color))
     else:
-        fig = px.line(df, x=x, y=y)
-        fig.update_traces(line_color=color, line_width=2)
-    fig.update_layout(title=title)
-    chart_key = _chart_key(key, "line", title, y, x)
-    st.plotly_chart(
-        style_figure(fig, height),
-        use_container_width=True,
-        config=PLOTLY_CONFIG,
-        key=chart_key,
-    )
+        marker_kwargs["color"] = "#58a6ff"
+        fig = go.Figure(go.Scatter(
+            x=plot_df[x], y=plot_df[y], mode="markers", marker=marker_kwargs,
+        ))
 
-
-def plot_bar(
-    df: pd.DataFrame,
-    x: str,
-    y: str,
-    title: str,
-    height: int = 280,
-    color: str = "#58a6ff",
-    key: str | None = None,
-):
-    if df.empty:
-        st.info(f"Nessun dato per «{title}».")
-        return
-    fig = px.bar(df, x=x, y=y)
-    fig.update_traces(marker_color=color)
+    if labels:
+        fig.update_xaxes(title_text=labels.get(x, x))
+        fig.update_yaxes(title_text=labels.get(y, y))
     fig.update_layout(title=title)
-    chart_key = _chart_key(key, "bar", title, y, x)
-    st.plotly_chart(
-        style_figure(fig, height),
-        use_container_width=True,
-        config=PLOTLY_CONFIG,
-        key=chart_key,
-    )
+    _show_chart(fig, height, key, "scatter", title, y, x)
 
 
 def plot_histogram(
@@ -163,13 +221,11 @@ def plot_histogram(
     if values is None or len(values) == 0:
         st.info(f"Nessun dato per «{title}».")
         return
-    fig = px.histogram(x=values, nbins=nbins, labels={"x": "Valore"})
-    fig.update_traces(marker_color=color)
-    fig.update_layout(title=title)
-    chart_key = _chart_key(key, "hist", title)
-    st.plotly_chart(
-        style_figure(fig, height),
-        use_container_width=True,
-        config=PLOTLY_CONFIG,
-        key=chart_key,
-    )
+    arr = pd.to_numeric(pd.Series(values), errors="coerce").dropna()
+    if arr.empty:
+        st.info(f"Nessun dato valido per «{title}».")
+        return
+
+    fig = go.Figure(go.Histogram(x=arr, nbinsx=nbins, marker_color=color))
+    fig.update_layout(title=title, xaxis_title="Valore")
+    _show_chart(fig, height, key, "hist", title)

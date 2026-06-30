@@ -38,6 +38,15 @@ def test_downgrade_after_50_trades():
     assert ccs.current_unit_eur == 4.0
 
 
+def test_tier_stake_multiplier():
+    ccs = ControlledCompounding(150)
+    assert ccs.current_unit_eur == 3.0
+    profit = ccs.settle_trade(True, 0.35, stake_u=1.5)
+    assert profit == round(3.0 * 1.5 * 0.35, 2)
+    assert ccs.trades[-1].stake_eur == 4.5
+    assert ccs.trades[-1].stake_u == 1.5
+
+
 def test_withdrawal():
     ccs = ControlledCompounding(5990)
     ccs.bankroll = 5996
@@ -58,6 +67,7 @@ if __name__ == "__main__":
     test_tier_upgrade()
     test_no_upgrade_in_drawdown()
     test_downgrade_after_50_trades()
+    test_tier_stake_multiplier()
     test_withdrawal()
     test_monte_carlo()
     print("All CCS tests passed.")

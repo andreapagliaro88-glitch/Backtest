@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from core.tier_engine import O15_TIER_RISK, O15_TIER_RULES, TierRiskRules, TierRules
 
-TIER_SYSTEMS = ("HT", "O15", "O25", "SH0", "SH1", "SH2")
+TIER_SYSTEMS = ("HT", "O15", "O25", "SH0", "SH1", "SH2", "MANUAL")
 
 SYSTEM_PROFIT_ODDS: dict[str, float] = {
     "HT": 0.4,
@@ -12,6 +12,7 @@ SYSTEM_PROFIT_ODDS: dict[str, float] = {
     "SH0": 0.3,
     "SH1": 0.3,
     "SH2": 0.3,
+    "MANUAL": 0.35,
 }
 
 DEFAULT_TIER_RULES: dict[str, TierRules] = {
@@ -36,6 +37,10 @@ DEFAULT_TIER_RULES: dict[str, TierRules] = {
         stake_t1=1.5, stake_t2=1.2, stake_t3=1.0, stake_t4=0.8,
         tier3_patterns=[], tier4_patterns=[],
     ),
+    "MANUAL": TierRules(
+        stake_t1=5.0, stake_t2=3.0, stake_t3=1.5, stake_t4=0.8,
+        tier3_patterns=[], tier4_patterns=[],
+    ),
 }
 
 
@@ -44,6 +49,9 @@ def default_tier_rules(system: str) -> TierRules:
 
 
 def profit_odds_for(system: str) -> float:
+    if system == "MANUAL":
+        from core.manual_strategy import get_manual_profit_odds
+        return get_manual_profit_odds()
     return SYSTEM_PROFIT_ODDS.get(system, 0.35)
 
 

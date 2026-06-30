@@ -36,7 +36,7 @@ def show_ccs_compound_tab(df_trades, ccs_data, initial_bankroll, df_grouped=None
 
     st.markdown("### Controlled Compounding System (CCS)")
     st.caption(
-        "1U a scaglioni fissi · stake max 1U · upgrade solo fuori DD · "
+        "1U a scaglioni fissi · stake = U tier × 1U · upgrade solo fuori DD · "
         f"downgrade dopo 50 trade sotto scaglione · prelievo a 6000€"
     )
 
@@ -62,9 +62,15 @@ def show_ccs_compound_tab(df_trades, ccs_data, initial_bankroll, df_grouped=None
 
     col1, col2 = st.columns(2)
     with col1:
-        plot_line(active, y="dd_eur", title="Drawdown (€)", color="#f85149", key="ccs_dd_eur")
+        plot_line(
+            active, y="dd_eur", title="Drawdown (€)", color="#f85149",
+            fill_to_zero=True, key="ccs_dd_eur",
+        )
     with col2:
-        plot_line(active, y="dd_pct", title="Drawdown (%)", color="#d29922", key="ccs_dd_pct")
+        plot_line(
+            active, y="dd_pct", title="Drawdown (%)", color="#d29922",
+            fill_to_zero=True, key="ccs_dd_pct",
+        )
 
     if withdrawals:
         st.markdown("#### Prelievi")

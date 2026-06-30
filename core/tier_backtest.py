@@ -1,6 +1,9 @@
 """Backtest con Metodo Tier — qualsiasi strategia con pattern."""
 from __future__ import annotations
 
+from types import SimpleNamespace
+from typing import Any, Callable
+
 import pandas as pd
 
 from core.match_grouping import group_by_fixture
@@ -11,6 +14,13 @@ from core.tier_engine import (
     stake_u_for_tier,
     tier_label,
 )
+
+TRADE_COLUMNS = [
+    "date", "system", "stake", "profit", "equity", "peak", "dd",
+    "tier", "tier_label", "patterns", "patterns_str", "n_engines", "vinto",
+]
+
+TierMatchRecord = tuple[list[str], bool, Any]
 
 
 class TierState:
@@ -82,35 +92,48 @@ def process_tier_trade(row, state: TierState, rules: TierRules, risk, profit_odd
     return stake, profit, state.equity, tier, patterns
 
 
-def run_tier_backtest(
-    df: pd.DataFrame,
+def prepare_tier_records(df: pd.DataFrame, system: str) -> list[TierMatchRecord]:
+    """Partite già unite (1 riga/match) — riusabile per molte combinazioni pattern."""
+    data = prepare_tier_data(df, system, patterns=None)
+    if data.empty:
+        return []
+    return [(list(r.patterns), bool(r.vinto), r.date) for r in data.itertuples(index=False)]
+
+
+def simulate_tier_records(
+    match_records: list[TierMatchRecord],
+    combo: tuple[str, ...] | list[str] | None,
     system: str,
-    patterns=None,
-    rules: TierRules | None = None,
+    rules: TierRules,
 ) -> pd.DataFrame:
-    rules = rules or default_tier_rules(system)
+    if not match_records:
+        return pd.DataFrame(columns=TRADE_COLUMNS)
+
+    combo_set = set(combo) if combo else None
     risk = default_tier_risk(system)
     profit_odds = profit_odds_for(system)
-    data = prepare_tier_data(df, system, patterns)
-    if data.empty:
-        return pd.DataFrame(columns=[
-            "date", "system", "stake", "profit", "equity", "peak", "dd",
-            "tier", "tier_label", "patterns", "patterns_str", "n_engines", "vinto",
-        ])
-
     state = TierState()
     records = []
-    for row in data.itertuples(index=False):
-        stake, profit, equity, tier, pats = process_tier_trade(
+
+    for pats, vinto, date in match_records:
+        if combo_set is not None:
+            active = [p for p in pats if p in combo_set]
+            if not active:
+                continue
+        else:
+            active = pats
+
+        row = SimpleNamespace(patterns=active, vinto=vinto)
+        stake, profit, equity, tier, row_pats = process_tier_trade(
             row, state, rules=rules, risk=risk, profit_odds=profit_odds,
         )
-        patterns_str = " + ".join(pats) if pats else ""
-        vinto = bool(row.vinto) if stake > 0 else False
+        patterns_str = " + ".join(row_pats) if row_pats else ""
+        played = stake > 0
         records.append([
-            row.date, system, stake, profit, equity,
+            date, system, stake, profit, equity,
             tier if tier is not None else 0,
             tier_label(tier) if tier else "SKIP",
-            patterns_str, len(pats), vinto,
+            patterns_str, len(row_pats), bool(vinto) if played else False,
         ])
 
     df_trades = pd.DataFrame(records, columns=[
@@ -121,6 +144,18 @@ def run_tier_backtest(
     df_trades["peak"] = df_trades["equity"].cummax()
     df_trades["dd"] = df_trades["equity"] - df_trades["peak"]
     return df_trades
+
+
+def run_tier_backtest(
+    df: pd.DataFrame,
+    system: str,
+    patterns=None,
+    rules: TierRules | None = None,
+) -> pd.DataFrame:
+    rules = rules or default_tier_rules(system)
+    match_records = prepare_tier_records(df, system)
+    combo = tuple(patterns) if patterns else None
+    return simulate_tier_records(match_records, combo, system, rules)
 
 
 def tier_summary(df_trades: pd.DataFrame) -> pd.DataFrame:
