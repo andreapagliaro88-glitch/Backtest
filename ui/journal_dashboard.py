@@ -161,10 +161,11 @@ def _kpi_card(label: str, value: str, sub: str = "", green: bool = False, red: b
     )
 
 
-def _esito_chips(df: pd.DataFrame):
+def _esito_chips(df: pd.DataFrame, key_prefix: str):
     counts = {e: int((df["esito"] == e).sum()) for e in ESITI}
-    if "jn_esiti" not in st.session_state:
-        st.session_state["jn_esiti"] = DEFAULT_ESITI.copy()
+    esiti_key = f"{key_prefix}_esiti"
+    if esiti_key not in st.session_state:
+        st.session_state[esiti_key] = DEFAULT_ESITI.copy()
 
     c1, c2, c3, c4 = st.columns(4)
     toggles = [
@@ -172,14 +173,14 @@ def _esito_chips(df: pd.DataFrame):
     ]
     for col, esito in toggles:
         with col:
-            on = esito in st.session_state["jn_esiti"]
+            on = esito in st.session_state[esiti_key]
             label = f"{'● ' if on else '○ '}{esito} ({counts.get(esito, 0)})"
-            if st.button(label, key=f"chip_{esito}", use_container_width=True):
-                cur = st.session_state["jn_esiti"]
+            if st.button(label, key=f"{key_prefix}_chip_{esito}", use_container_width=True):
+                cur = st.session_state[esiti_key]
                 if esito in cur:
-                    st.session_state["jn_esiti"] = [e for e in cur if e != esito]
+                    st.session_state[esiti_key] = [e for e in cur if e != esito]
                 else:
-                    st.session_state["jn_esiti"] = cur + [esito]
+                    st.session_state[esiti_key] = cur + [esito]
                 st.rerun()
 
 
@@ -320,12 +321,21 @@ def _render_table(page_df: pd.DataFrame):
     st.markdown(html, unsafe_allow_html=True)
 
 
-def render_journal_section(journal: pd.DataFrame, bankroll_input: float, initial_bankroll: float):
+def render_journal_section(
+    journal: pd.DataFrame,
+    bankroll_input: float,
+    initial_bankroll: float,
+    *,
+    key_prefix: str = "jn",
+    strategia_filter: str | tuple[str, ...] | None = None,
+    title: str = "Journal trade",
+    tier_plan=None,
+):
     st.markdown(JOURNAL_CSS, unsafe_allow_html=True)
 
     hdr_l, hdr_r = st.columns([3, 1])
     with hdr_l:
-        st.markdown('<p class="jn-title">Journal trade</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="jn-title">{title}</p>', unsafe_allow_html=True)
     with hdr_r:
         if os.path.exists(JOURNAL_PATH):
             with open(JOURNAL_PATH, "rb") as f:
@@ -335,36 +345,50 @@ def render_journal_section(journal: pd.DataFrame, bankroll_input: float, initial
                     file_name="journal_trade.csv",
                     mime="text/csv",
                     use_container_width=True,
+                    key=f"{key_prefix}_export_csv",
                 )
 
     if journal.empty:
         st.info("Nessun trade nel journal. Carica i file Fixtures per iniziare.")
         return
 
+    if strategia_filter is not None:
+        if isinstance(strategia_filter, tuple):
+            journal = journal[journal["strategia"].isin(strategia_filter)].copy()
+        else:
+            journal = journal[journal["strategia"] == strategia_filter].copy()
+        if journal.empty:
+            st.info("Nessun trade per questa strategia nel journal.")
+            return
+
     df = _prepare_df(journal)
 
     st.markdown('<div class="jn-panel">', unsafe_allow_html=True)
-    _esito_chips(df)
+    _esito_chips(df, key_prefix)
 
     min_d = df["data"].min().date() if df["data"].notna().any() else None
     max_d = df["data"].max().date() if df["data"].notna().any() else None
     fc1, fc2, fc3, fc4 = st.columns(4)
     with fc1:
-        date_from = st.date_input("Periodo — Da", value=min_d, key="jn_date_from")
+        date_from = st.date_input("Periodo — Da", value=min_d, key=f"{key_prefix}_date_from")
     with fc2:
-        date_to = st.date_input("A", value=max_d, key="jn_date_to")
+        date_to = st.date_input("A", value=max_d, key=f"{key_prefix}_date_to")
     with fc3:
         camps = ["Tutti"] + sorted(df["campionato"].dropna().astype(str).unique().tolist())
-        campionato = st.selectbox("Campionato", camps, key="jn_camp")
+        campionato = st.selectbox("Campionato", camps, key=f"{key_prefix}_camp")
     with fc4:
         strats = ["Tutte"] + sorted(df["strategia"].dropna().astype(str).unique().tolist())
-        strategia = st.selectbox("Strategia", strats, key="jn_strat")
+        if strategia_filter is not None and not isinstance(strategia_filter, tuple):
+            strategia = strategia_filter
+            st.selectbox("Strategia", [strategia_filter], key=f"{key_prefix}_strat", disabled=True)
+        else:
+            strategia = st.selectbox("Strategia", strats, key=f"{key_prefix}_strat")
 
     risks = ["Tutti"] + sorted([r for r in df["risk_mode"].unique().tolist() if r])
-    risk_mode = st.selectbox("Risk mode", risks, key="jn_risk")
+    risk_mode = st.selectbox("Risk mode", risks, key=f"{key_prefix}_risk")
     st.markdown("</div>", unsafe_allow_html=True)
 
-    esiti = st.session_state.get("jn_esiti", DEFAULT_ESITI)
+    esiti = st.session_state.get(f"{key_prefix}_esiti", DEFAULT_ESITI)
     jf = _filter_df(df, esiti, date_from, date_to, campionato, strategia, risk_mode)
 
     settled = jf[jf["esito"].isin(["VINTO", "PERSO"])]
@@ -421,9 +445,9 @@ def render_journal_section(journal: pd.DataFrame, bankroll_input: float, initial
         _chart_profit_by_hour(settled)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    page_size = st.selectbox("Mostra righe", [10, 25, 50, 100], index=0, key="jn_page_size")
+    page_size = st.selectbox("Mostra righe", [10, 25, 50, 100], index=0, key=f"{key_prefix}_page_size")
     total_pages = max(1, math.ceil(len(jf) / page_size))
-    page = st.number_input("Pagina", min_value=1, max_value=total_pages, value=1, step=1, key="jn_page")
+    page = st.number_input("Pagina", min_value=1, max_value=total_pages, value=1, step=1, key=f"{key_prefix}_page")
     start = (page - 1) * page_size
     page_df = jf.iloc[start:start + page_size]
     st.caption(f"{len(jf)} trade · pagina {page}/{total_pages}")
@@ -435,13 +459,13 @@ def render_journal_section(journal: pd.DataFrame, bankroll_input: float, initial
 
     ec1, ec2, ec3, ec4 = st.columns(4)
     with ec1:
-        del_date_from = st.date_input("Elimina da (data)", value=min_d, key="jn_del_date_from")
+        del_date_from = st.date_input("Elimina da (data)", value=min_d, key=f"{key_prefix}_del_date_from")
     with ec2:
-        del_date_to = st.date_input("Elimina a (data)", value=max_d, key="jn_del_date_to")
+        del_date_to = st.date_input("Elimina a (data)", value=max_d, key=f"{key_prefix}_del_date_to")
     with ec3:
-        del_time_from = st.text_input("Ora da (opz.)", value="", placeholder="es. 14:00", key="jn_del_time_from")
+        del_time_from = st.text_input("Ora da (opz.)", value="", placeholder="es. 14:00", key=f"{key_prefix}_del_time_from")
     with ec4:
-        del_time_to = st.text_input("Ora a (opz.)", value="", placeholder="es. 22:00", key="jn_del_time_to")
+        del_time_to = st.text_input("Ora a (opz.)", value="", placeholder="es. 22:00", key=f"{key_prefix}_del_time_to")
 
     preview_mask = trades_in_period_mask(
         df,
@@ -459,7 +483,7 @@ def render_journal_section(journal: pd.DataFrame, bankroll_input: float, initial
             f"🗑 Elimina {n_preview} trade nel periodo",
             use_container_width=True,
             disabled=n_preview == 0,
-            key="jn_delete_period",
+            key=f"{key_prefix}_delete_period",
         ):
             _, n = delete_trades_in_period(
                 del_date_from,
@@ -471,12 +495,12 @@ def render_journal_section(journal: pd.DataFrame, bankroll_input: float, initial
             st.success(f"Eliminati {n} trade.")
             st.rerun()
     with bc_all:
-        confirm_all = st.checkbox("Confermo eliminazione di TUTTI i trade", key="jn_confirm_delete_all")
+        confirm_all = st.checkbox("Confermo eliminazione di TUTTI i trade", key=f"{key_prefix}_confirm_delete_all")
         if st.button(
             "🗑 Elimina tutti i trade",
             use_container_width=True,
             disabled=not confirm_all or journal.empty,
-            key="jn_delete_all",
+            key=f"{key_prefix}_delete_all",
         ):
             delete_all_trades()
             st.success("Journal svuotato.")
@@ -484,6 +508,11 @@ def render_journal_section(journal: pd.DataFrame, bankroll_input: float, initial
     st.markdown("</div>", unsafe_allow_html=True)
 
     pending = journal[journal["esito"] == "DA GIOCARE"].copy()
+    if strategia_filter is not None:
+        if isinstance(strategia_filter, tuple):
+            pending = pending[pending["strategia"].isin(strategia_filter)]
+        else:
+            pending = pending[pending["strategia"] == strategia_filter]
     pending = _prepare_df(pending) if not pending.empty else pending
 
     if not pending.empty:
@@ -525,19 +554,20 @@ def render_journal_section(journal: pd.DataFrame, bankroll_input: float, initial
                     f"({ready[ready['trade_id']==x]['stake_eur'].iloc[0]:.2f}€)"
                 ),
                 label_visibility="collapsed",
+                key=f"{key_prefix}_settle_pick",
             )
             bc1, bc2, bc3 = st.columns(3)
             with bc1:
-                if st.button("✅ Win", use_container_width=True, key="jn_win"):
-                    settle_trade(tid, True, bankroll_input)
+                if st.button("✅ Win", use_container_width=True, key=f"{key_prefix}_win"):
+                    settle_trade(tid, True, bankroll_input, tier_plan=tier_plan)
                     st.rerun()
             with bc2:
-                if st.button("❌ Lose", use_container_width=True, key="jn_lose"):
-                    settle_trade(tid, False, bankroll_input)
+                if st.button("❌ Lose", use_container_width=True, key=f"{key_prefix}_lose"):
+                    settle_trade(tid, False, bankroll_input, tier_plan=tier_plan)
                     st.rerun()
             with bc3:
-                if st.button("⏭ No trade", use_container_width=True, key="jn_skip"):
-                    mark_no_trade(tid, bankroll_input)
+                if st.button("⏭ No trade", use_container_width=True, key=f"{key_prefix}_skip"):
+                    mark_no_trade(tid, bankroll_input, tier_plan=tier_plan)
                     st.rerun()
 
         if not live.empty:

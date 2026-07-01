@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import os
 import uuid
-from dataclasses import asdict, dataclass, field
+from typing import Any
 from datetime import datetime
 
 import pandas as pd
@@ -17,6 +17,14 @@ from core.o15_backtest import O15State, o15_base_stake, process_o15_trade
 from core.o25_backtest import O25State, o25_base_stake, process_o25_trade
 from core.sh0_backtest import SH0State, preview_sh_stake, sh0_base_stake, process_sh0_trade
 from core.strategy_engine import StrategyState
+
+from core.strategy_daily_plan import (
+    StrategyDailyPlanConfig,
+    apply_tier_settlement,
+    plan_tier_daily_match,
+    pats_from_note,
+    replay_tier_state,
+)
 
 JOURNAL_DIR = os.path.join("data", "daily_trades")
 JOURNAL_PATH = os.path.join(JOURNAL_DIR, "journal.csv")
@@ -36,7 +44,7 @@ SETTLED_ESITI = ("VINTO", "PERSO")
 SKIPPED_ESITI = ("SALTATO", ESITO_NO_TRADE)
 
 # Minuti stimati dopo kickoff prima di poter registrare l'esito
-MATCH_DURATION_MIN = {"HT": 55, "O15": 110, "O25": 110, "SH0": 110}
+MATCH_DURATION_MIN = {"HT": 55, "O15": 110, "O25": 110, "SH0": 110, "SH1": 110, "SH2": 110}
 DEFAULT_MATCH_MIN = 110
 
 def parse_kickoff(data, ora) -> pd.Timestamp | None:
@@ -208,6 +216,8 @@ class LiveState:
     strategy: StrategyState = field(default_factory=StrategyState)
     full_stop: int = 0
     params: CombinedParams = field(default_factory=CombinedParams)
+    tier_state: Any = None
+    tier_plan: Any = None
 
 
 def _stake_for_system(system: str, signals: int, row: pd.Series, state: StrategyState) -> tuple[float, str]:
@@ -270,13 +280,23 @@ def _stake_for_system(system: str, signals: int, row: pd.Series, state: Strategy
     return 0.0, "Strategia sconosciuta"
 
 
+def _build_signals_map(group: pd.DataFrame) -> dict[str, int]:
+    systems = ("HT", "O15", "O25", "SH0", "SH1", "SH2")
+    return {
+        sys: int(group[group["strategia"] == sys]["segnali"].sum())
+        if sys in group["strategia"].values else 0
+        for sys in systems
+    }
+
+
 def plan_match(
     match_id,
     match_rows: pd.DataFrame,
     live: LiveState,
     signals_map: dict | None = None,
+    forced_system: str | None = None,
 ) -> dict:
-    """Decide cosa giocare su una partita (combinata)."""
+    """Decide cosa giocare su una partita (combinata o singola strategia)."""
     if live.full_stop > 0:
         live.full_stop -= 1
         return _skip_row(match_rows.iloc[0], "Full stop attivo", signals_map)
@@ -294,16 +314,27 @@ def plan_match(
         for _, r in match_rows.iterrows():
             systems[r["strategia"]] = int(r["segnali"])
 
-    blocked = params.allowed_systems(drawdown_u) or set()
-    priority = params.priority_for(drawdown_u)
-
     chosen_sys = None
     chosen_signals = 0
-    for sys_name in priority:
-        if sys_name in systems and sys_name not in blocked:
-            chosen_sys = sys_name
-            chosen_signals = systems[sys_name]
-            break
+    blocked: set[str] = set()
+    if forced_system:
+        sig_n = systems.get(forced_system, 0)
+        if sig_n <= 0:
+            return _skip_row(
+                match_rows.iloc[0],
+                f"Nessun segnale {forced_system}",
+                signals_map,
+            )
+        chosen_sys = forced_system
+        chosen_signals = sig_n
+    else:
+        blocked = params.allowed_systems(drawdown_u) or set()
+        priority = params.priority_for(drawdown_u)
+        for sys_name in priority:
+            if sys_name in systems and sys_name not in blocked:
+                chosen_sys = sys_name
+                chosen_signals = systems[sys_name]
+                break
 
     if chosen_sys is None:
         reason = "Nessuna strategia disponibile"
@@ -330,18 +361,13 @@ def plan_match(
 
 
 def _signals_dict(systems: dict, signals_map: dict | None) -> dict:
-    if signals_map:
-        return {
-            "signals_ht": int(signals_map.get("HT", 0)),
-            "signals_o15": int(signals_map.get("O15", 0)),
-            "signals_o25": int(signals_map.get("O25", 0)),
-            "signals_sh0": int(signals_map.get("SH0", 0)),
-        }
+    sm = signals_map or systems
+    sh_extra = int(sm.get("SH1", 0)) + int(sm.get("SH2", 0))
     return {
-        "signals_ht": int(systems.get("HT", 0)),
-        "signals_o15": int(systems.get("O15", 0)),
-        "signals_o25": int(systems.get("O25", 0)),
-        "signals_sh0": int(systems.get("SH0", 0)),
+        "signals_ht": int(sm.get("HT", 0)),
+        "signals_o15": int(sm.get("O15", 0)),
+        "signals_o25": int(sm.get("O25", 0)),
+        "signals_sh0": int(sm.get("SH0", 0)) + sh_extra,
     }
 
 
@@ -454,18 +480,32 @@ def _sync_subsystem_after_settlement(system: str, vinto: bool, profit_u: float, 
                 state.loss_streak = 0
 
 
-def apply_settlement(trade: dict, vinto: bool, live: LiveState):
-    """Registra esito con CCS: stake = 1U, profitto in €."""
+def apply_settlement(
+    trade: dict,
+    vinto: bool,
+    live: LiveState,
+    tier_plan: StrategyDailyPlanConfig | None = None,
+):
+    """Registra esito con CCS; stake_u dal trade (1U combinata o tier)."""
+    if (
+        trade.get("modalita_rischio") == "Tier"
+        and tier_plan is not None
+        and live.tier_state is not None
+    ):
+        return apply_tier_settlement(trade, vinto, live.ccs, live.tier_state, tier_plan)
+
     system = trade["strategia"]
     odds = PROFIT_ODDS[system]
+    stake_u = float(trade.get("stake_u") or 1.0)
 
     profit_eur = live.ccs.settle_trade(
         vinto=vinto,
         profit_odds=odds,
         date=trade.get("data"),
         system=system,
+        stake_u=stake_u,
     )
-    profit_u = round(odds, 2) if vinto else -1.0
+    profit_u = round(stake_u * odds, 2) if vinto else round(-stake_u, 2)
 
     _sync_subsystem_after_settlement(system, vinto, profit_u, live)
 
@@ -481,8 +521,23 @@ def apply_settlement(trade: dict, vinto: bool, live: LiveState):
     return trade
 
 
-def rebuild_live_state(journal: pd.DataFrame, initial_bankroll: float = INITIAL_BANKROLL) -> LiveState:
+def rebuild_live_state(
+    journal: pd.DataFrame,
+    initial_bankroll: float = INITIAL_BANKROLL,
+    tier_plan: StrategyDailyPlanConfig | None = None,
+) -> LiveState:
     live = LiveState(ccs=ControlledCompounding(initial_bankroll))
+    live.tier_plan = tier_plan
+    if tier_plan is not None:
+        from core.tier_backtest import TierState
+        settled_rows = [
+            r.to_dict()
+            for _, r in journal.sort_values(["data", "ora"]).iterrows()
+            if r["esito"] in SETTLED_ESITI
+        ]
+        live.tier_state = replay_tier_state(
+            settled_rows, tier_plan.system, tier_plan.rules, tier_plan.active_patterns,
+        )
     journal = journal.sort_values(["data", "ora"]).reset_index(drop=True)
 
     for _, row in journal.iterrows():
@@ -492,9 +547,25 @@ def rebuild_live_state(journal: pd.DataFrame, initial_bankroll: float = INITIAL_
             continue
         if row["esito"] not in SETTLED_ESITI:
             continue
-        apply_settlement(row.to_dict(), row["esito"] == "VINTO", live)
+        apply_settlement(row.to_dict(), row["esito"] == "VINTO", live, tier_plan=tier_plan)
 
     return live
+
+
+def _journal_row_from_plan(plan: dict) -> dict:
+    return {k: v for k, v in plan.items() if k not in ("patterns", "tier")}
+
+
+def _patterns_from_group(group: pd.DataFrame) -> list[str]:
+    patterns: list[str] = []
+    if "patterns" not in group.columns:
+        return patterns
+    for val in group["patterns"]:
+        if isinstance(val, (list, tuple)):
+            patterns.extend(val)
+        elif isinstance(val, str) and val:
+            patterns.extend(p.strip() for p in val.split("+") if p.strip())
+    return sorted(set(patterns))
 
 
 def process_daily_upload(
@@ -502,9 +573,14 @@ def process_daily_upload(
     journal: pd.DataFrame | None = None,
     initial_bankroll: float | None = None,
     skip_existing: bool = True,
+    allowed_systems: tuple[str, ...] | None = None,
+    forced_system: str | None = None,
+    tier_plan: StrategyDailyPlanConfig | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, LiveState]:
     """Pianifica trade del giorno e aggiorna journal."""
     parsed = parse_upload(upload_df)
+    if allowed_systems:
+        parsed = parsed[parsed["strategia"].isin(allowed_systems)]
     journal = load_journal() if journal is None else journal.copy()
     bankroll_start = initial_bankroll if initial_bankroll is not None else INITIAL_BANKROLL
 
@@ -512,7 +588,12 @@ def process_daily_upload(
         live = LiveState(ccs=ControlledCompounding(bankroll_start))
     else:
         settled = journal[journal["esito"].isin(SETTLED_ESITI)]
-        live = rebuild_live_state(settled, bankroll_start)
+        live = rebuild_live_state(settled, bankroll_start, tier_plan=tier_plan)
+
+    if tier_plan is not None and live.tier_state is None:
+        from core.tier_backtest import TierState
+        live.tier_state = TierState()
+    live.tier_plan = tier_plan
 
     existing_keys = set()
     if skip_existing and not journal.empty:
@@ -524,23 +605,34 @@ def process_daily_upload(
         key = (group.iloc[0]["data"], match_id)
         if skip_existing and key in existing_keys:
             continue
-        signals_map = {
-            "HT": int(group[group["strategia"] == "HT"]["segnali"].sum()) if "HT" in group["strategia"].values else 0,
-            "O15": int(group[group["strategia"] == "O15"]["segnali"].sum()) if "O15" in group["strategia"].values else 0,
-            "O25": int(group[group["strategia"] == "O25"]["segnali"].sum()) if "O25" in group["strategia"].values else 0,
-            "SH0": int(group[group["strategia"] == "SH0"]["segnali"].sum()) if "SH0" in group["strategia"].values else 0,
-        }
         group = group.copy()
         if "fonti" in group.columns:
             group["fonti"] = ", ".join(sorted(set(group["fonti"].dropna().astype(str))))
-        plan = plan_match(match_id, group, live, signals_map=signals_map)
-        new_rows.append(plan)
+
+        if tier_plan is not None:
+            row0 = group.iloc[0]
+            patterns = _patterns_from_group(group)
+            plan = plan_tier_daily_match(
+                row0,
+                match_id,
+                patterns,
+                tier_plan,
+                live.tier_state,
+                live.ccs,
+                fonti=row0.get("fonti", ""),
+            )
+        else:
+            signals_map = _build_signals_map(group)
+            plan = plan_match(
+                match_id, group, live, signals_map=signals_map, forced_system=forced_system,
+            )
+        new_rows.append(_journal_row_from_plan(plan))
 
     plan_df = pd.DataFrame(new_rows)
     if not plan_df.empty:
         journal = pd.concat([journal, plan_df], ignore_index=True)
-        journal = recompute_journal(journal, bankroll_start)
-        live = rebuild_live_state(journal[journal["esito"].isin(SETTLED_ESITI)], bankroll_start)
+        journal = recompute_journal(journal, bankroll_start, tier_plan=tier_plan)
+        live = rebuild_live_state(journal[journal["esito"].isin(SETTLED_ESITI)], bankroll_start, tier_plan=tier_plan)
 
     return plan_df, journal, live
 
@@ -561,33 +653,34 @@ def _signals_group_from_row(row: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def recompute_journal(journal: pd.DataFrame, initial_bankroll: float = INITIAL_BANKROLL) -> pd.DataFrame:
+def recompute_journal(
+    journal: pd.DataFrame,
+    initial_bankroll: float = INITIAL_BANKROLL,
+    tier_plan: StrategyDailyPlanConfig | None = None,
+) -> pd.DataFrame:
     """Ricalcola stake pending in ordine cronologico dopo Win/Lose."""
     if journal.empty:
         return journal
 
     journal = journal.sort_values(["data", "ora", "trade_id"]).reset_index(drop=True)
     live = LiveState(ccs=ControlledCompounding(initial_bankroll))
+    live.tier_plan = tier_plan
+    if tier_plan is not None:
+        from core.tier_backtest import TierState
+        live.tier_state = TierState()
     out = []
     last_settled_slot = None
 
     for _, row in journal.iterrows():
         r = row.to_dict()
         esito = r.get("esito", "DA GIOCARE")
-        sig = {
-            "HT": int(r.get("signals_ht") or 0),
-            "O15": int(r.get("signals_o15") or 0),
-            "O25": int(r.get("signals_o25") or 0),
-            "SH0": int(r.get("signals_sh0") or 0),
-        }
-        group_df = _signals_group_from_row(r)
 
         if esito in SKIPPED_ESITI:
             out.append(r)
             continue
 
         if esito in SETTLED_ESITI:
-            apply_settlement(r, esito == "VINTO", live)
+            apply_settlement(r, esito == "VINTO", live, tier_plan=tier_plan)
             last_settled_slot = _slot_key(r)
             out.append(r)
             continue
@@ -597,7 +690,56 @@ def recompute_journal(journal: pd.DataFrame, initial_bankroll: float = INITIAL_B
             out.append(r)
             continue
 
-        plan = plan_match(r["match_id"], group_df, live, signals_map=sig)
+        if r.get("modalita_rischio") == "Tier" and tier_plan is not None and live.tier_state is not None:
+            patterns = pats_from_note(r)
+            fake_row = pd.Series({
+                "data": r["data"],
+                "ora": r.get("ora", ""),
+                "campionato": r.get("campionato", ""),
+                "partita": r.get("partita", ""),
+                "fonti": r.get("fonti", ""),
+            })
+            plan = plan_tier_daily_match(
+                fake_row,
+                r.get("match_id"),
+                patterns,
+                tier_plan,
+                live.tier_state,
+                live.ccs,
+                fonti=r.get("fonti", ""),
+            )
+            plan = _journal_row_from_plan(plan)
+            plan["trade_id"] = r.get("trade_id", plan["trade_id"])
+            plan["esito"] = "DA GIOCARE"
+            out.append(plan)
+            continue
+
+        sig = {
+            "HT": int(r.get("signals_ht") or 0),
+            "O15": int(r.get("signals_o15") or 0),
+            "O25": int(r.get("signals_o25") or 0),
+            "SH0": int(r.get("signals_sh0") or 0),
+            "SH1": 0,
+            "SH2": 0,
+        }
+        strat_saved = str(r.get("strategia") or "")
+        if strat_saved == "SH1":
+            sig["SH1"] = int(r.get("segnali") or r.get("signals_sh0") or 0)
+            sig["SH0"] = 0
+        elif strat_saved == "SH2":
+            sig["SH2"] = int(r.get("segnali") or r.get("signals_sh0") or 0)
+            sig["SH0"] = 0
+        group_df = _signals_group_from_row(r)
+
+        replan_forced = None
+        strat = strat_saved
+        if strat and strat not in ("—", "nan") and strat in ("HT", "O15", "O25", "SH0", "SH1", "SH2"):
+            other = sum(int(sig.get(s, 0)) for s in ("HT", "O15", "O25", "SH0", "SH1", "SH2") if s != strat)
+            if other == 0:
+                replan_forced = strat
+        plan = plan_match(
+            r["match_id"], group_df, live, signals_map=sig, forced_system=replan_forced,
+        )
         plan["trade_id"] = r.get("trade_id", plan["trade_id"])
         plan["esito"] = "DA GIOCARE"
         out.append(plan)
@@ -610,19 +752,36 @@ def process_fixture_upload(
     journal: pd.DataFrame | None = None,
     initial_bankroll: float | None = None,
     skip_existing: bool = True,
+    allowed_systems: tuple[str, ...] | None = None,
+    forced_system: str | None = None,
+    tier_plan: StrategyDailyPlanConfig | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, LiveState, pd.DataFrame]:
     """Merge file Fixtures e pianifica trade combinati."""
     from core.fixture_parser import merge_fixture_files, merge_to_daily_format
 
-    merged = merge_fixture_files(file_list)
+    active_patterns = tier_plan.active_patterns if tier_plan else None
+    merged = merge_fixture_files(file_list, active_patterns=active_patterns)
+    if allowed_systems:
+        merged = merged[merged["strategia"].isin(allowed_systems)]
     daily = merge_to_daily_format(merged)
     plan_df, journal_out, live = process_daily_upload(
-        daily, journal=journal, initial_bankroll=initial_bankroll, skip_existing=skip_existing,
+        daily,
+        journal=journal,
+        initial_bankroll=initial_bankroll,
+        skip_existing=skip_existing,
+        allowed_systems=allowed_systems,
+        forced_system=forced_system,
+        tier_plan=tier_plan,
     )
     return plan_df, journal_out, live, merged
 
 
-def settle_trade(trade_id: str, vinto: bool, initial_bankroll: float = INITIAL_BANKROLL) -> pd.DataFrame:
+def settle_trade(
+    trade_id: str,
+    vinto: bool,
+    initial_bankroll: float = INITIAL_BANKROLL,
+    tier_plan: StrategyDailyPlanConfig | None = None,
+) -> pd.DataFrame:
     journal = load_journal()
     mask = journal["trade_id"] == trade_id
     if not mask.any():
@@ -632,12 +791,16 @@ def settle_trade(trade_id: str, vinto: bool, initial_bankroll: float = INITIAL_B
         raise ValueError("Trade già regolato")
 
     journal.loc[mask, "esito"] = "VINTO" if vinto else "PERSO"
-    journal = recompute_journal(journal, initial_bankroll)
+    journal = recompute_journal(journal, initial_bankroll, tier_plan=tier_plan)
     save_journal(journal)
     return journal
 
 
-def mark_no_trade(trade_id: str, initial_bankroll: float = INITIAL_BANKROLL) -> pd.DataFrame:
+def mark_no_trade(
+    trade_id: str,
+    initial_bankroll: float = INITIAL_BANKROLL,
+    tier_plan: StrategyDailyPlanConfig | None = None,
+) -> pd.DataFrame:
     """Segna un trade pianificato come saltato manualmente (nessun P&L)."""
     journal = load_journal()
     mask = journal["trade_id"] == trade_id
@@ -656,7 +819,7 @@ def mark_no_trade(trade_id: str, initial_bankroll: float = INITIAL_BANKROLL) -> 
     journal.at[idx, "profit_eur"] = 0
     journal.at[idx, "note"] = f"{note} | Saltato manualmente".strip(" |")
 
-    journal = recompute_journal(journal, initial_bankroll)
+    journal = recompute_journal(journal, initial_bankroll, tier_plan=tier_plan)
     save_journal(journal)
     return journal
 

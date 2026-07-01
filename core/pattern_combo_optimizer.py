@@ -8,7 +8,7 @@ from typing import Callable, Iterable
 import pandas as pd
 
 from core.backtest_metrics import backtest_metrics
-from core.tier_backtest import prepare_tier_records, simulate_tier_records
+from core.tier_backtest import prepare_tier_records
 
 
 def combo_label(patterns: tuple[str, ...]) -> str:
@@ -78,10 +78,11 @@ def optimize_tier_pattern_combos(
     *,
     max_combo_size: int | None = None,
     progress_callback: Callable[[float], None] | None = None,
+    dd_weight: float = 0.6,
 ) -> pd.DataFrame:
     """
-    Ottimizzazione veloce tier: raggruppa le partite una sola volta,
-    poi simula ogni combinazione pattern in memoria.
+    Ottimizzazione veloce tier: stesso motore di Simula stake
+    (regole adattate per combo + eventi tier).
     """
     available = patterns or list_available_patterns(df_raw, system)
     if not available:
@@ -96,13 +97,12 @@ def optimize_tier_pattern_combos(
     total = len(combos)
     rows = []
 
+    from core.tier_stake_optimizer import evaluate_pattern_combo
+
     for i, combo in enumerate(combos):
-        trades = simulate_tier_records(match_records, combo, system, rules)
-        metrics = backtest_metrics(trades)
-        metrics["patterns"] = list(combo)
-        metrics["combo"] = combo_label(combo)
-        metrics["n_patterns"] = len(combo)
-        rows.append(metrics)
+        rows.append(
+            evaluate_pattern_combo(match_records, combo, system, rules, dd_weight=dd_weight)
+        )
         if progress_callback and total:
             progress_callback((i + 1) / total)
 

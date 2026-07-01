@@ -26,12 +26,14 @@ STRATEGY_SECTIONS_TIER: list[tuple[str, str]] = [
     ("stake_sim", "⚖️ Simula stake"),
     ("combo", "🧩 Combinazioni pattern"),
     ("opt", "⚙️ Ottimizza stake"),
+    ("daily", "📅 Trade giornaliero"),
 ]
 
 STRATEGY_SECTIONS_BASIC: list[tuple[str, str]] = [
     ("bt", "📈 Backtest attuale"),
     ("combo", "🧩 Combinazioni pattern"),
     ("opt", "⚙️ Ottimizza stake"),
+    ("daily", "📅 Trade giornaliero"),
 ]
 
 NAV_SESSION_KEY = "app_nav_page"

@@ -35,6 +35,7 @@ from ui.metric_table import (
     render_simple_table,
 )
 from ui.plot_theme import plot_bar, plot_line
+from ui.strategy_daily_tab import render_strategy_daily_tab
 from ui.tier_metodo import (
     active_tier_rules,
     apply_stake_rules,
@@ -1189,3 +1190,21 @@ def show_strategy_tab(cfg: StrategyConfig):
 
     elif section == "stake_sim":
         render_stake_simulator_fragment(cfg.key, cfg.system, cfg.title.split("—")[0].strip(), df_raw)
+
+    elif section == "daily":
+        daily_patterns: list[str] = []
+        if cfg.system:
+            daily_patterns = list_available_patterns(df_raw, cfg.system)
+        elif cfg.key == "combined":
+            for sys in ("HT", "O15", "O25"):
+                for p in list_available_patterns(df_raw, sys):
+                    daily_patterns.append(f"{sys}:{p}")
+        else:
+            daily_patterns = patterns
+        render_strategy_daily_tab(
+            cfg.key,
+            cfg.title.split("—")[0].strip(),
+            daily_patterns,
+            system=cfg.system,
+            initial_bankroll=INITIAL_BANKROLL,
+        )

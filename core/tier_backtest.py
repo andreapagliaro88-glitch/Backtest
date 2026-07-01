@@ -11,6 +11,7 @@ from core.tier_config import default_tier_risk, default_tier_rules, profit_odds_
 from core.tier_engine import (
     TierRules,
     classify_tier,
+    rules_for_pattern_combo,
     stake_u_for_tier,
     tier_label,
 )
@@ -155,6 +156,8 @@ def run_tier_backtest(
     rules = rules or default_tier_rules(system)
     match_records = prepare_tier_records(df, system)
     combo = tuple(patterns) if patterns else None
+    if combo:
+        rules = rules_for_pattern_combo(combo, rules)
     return simulate_tier_records(match_records, combo, system, rules)
 
 

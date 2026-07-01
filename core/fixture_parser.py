@@ -87,6 +87,23 @@ def _pick_col(columns, *candidates):
     return None
 
 
+def pattern_from_fixture_filename(filename: str, strategia: str) -> str:
+    """Nome pattern da file Fixtures (allineato ai loader storici)."""
+    if strategia == "SH2":
+        from core.sh2_loader import pattern_from_filename
+        return pattern_from_filename(filename)
+    if strategia == "SH1":
+        from core.sh1_loader import pattern_from_filename
+        return pattern_from_filename(filename)
+    if strategia == "SH0":
+        from core.sh0_loader import pattern_from_filename
+        return pattern_from_filename(filename)
+    if strategia in ("HT", "O15", "O25"):
+        from core.pattern_loader import pattern_from_filename
+        return pattern_from_filename(filename, strategia)
+    return os.path.splitext(os.path.basename(filename))[0]
+
+
 def parse_fixture_file(path_or_buffer, filename: str) -> pd.DataFrame:
     strategia = strategy_from_filename(filename)
     if strategia is None:
@@ -120,11 +137,15 @@ def parse_fixture_file(path_or_buffer, filename: str) -> pd.DataFrame:
     out["strategia"] = strategia
     out["segnali"] = 1
     out["fonte_file"] = os.path.basename(filename)
+    out["pattern"] = pattern_from_fixture_filename(filename, strategia)
 
     return out.dropna(subset=["data"]).reset_index(drop=True)
 
 
-def merge_fixture_files(files: list[tuple]) -> pd.DataFrame:
+def merge_fixture_files(
+    files: list[tuple],
+    active_patterns: tuple[str, ...] | list[str] | None = None,
+) -> pd.DataFrame:
     """
     files: lista di (buffer_or_path, filename)
     Ritorna dataframe aggregato con segnali sommati per match+strategia.
@@ -137,6 +158,9 @@ def merge_fixture_files(files: list[tuple]) -> pd.DataFrame:
         return pd.DataFrame()
 
     raw = pd.concat(parts, ignore_index=True)
+    if active_patterns:
+        allowed = set(active_patterns)
+        raw = raw[raw["pattern"].isin(allowed)]
 
     agg = raw.groupby(
         ["match_id", "data", "strategia"],
@@ -147,7 +171,9 @@ def merge_fixture_files(files: list[tuple]) -> pd.DataFrame:
         campionato=("campionato", "first"),
         partita=("partita", "first"),
         fonti=("fonte_file", lambda x: ", ".join(sorted(set(x)))),
+        patterns=("pattern", lambda x: sorted(set(x))),
     )
+    agg["patterns_str"] = agg["patterns"].apply(lambda p: " + ".join(p))
 
     return agg.sort_values(["data", "ora", "match_id"]).reset_index(drop=True)
 
@@ -156,7 +182,7 @@ def merge_to_daily_format(merged: pd.DataFrame) -> pd.DataFrame:
     """Converte in formato long per daily_trades."""
     rows = []
     for _, r in merged.iterrows():
-        rows.append({
+        row = {
             "data": r["data"],
             "ora": r["ora"],
             "campionato": r["campionato"],
@@ -165,7 +191,11 @@ def merge_to_daily_format(merged: pd.DataFrame) -> pd.DataFrame:
             "strategia": r["strategia"],
             "segnali": int(r["segnali"]),
             "fonti": r.get("fonti", ""),
-        })
+        }
+        if "patterns" in r.index:
+            pats = r["patterns"]
+            row["patterns"] = list(pats) if isinstance(pats, (list, tuple)) else []
+        rows.append(row)
     return pd.DataFrame(rows)
 
 

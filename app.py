@@ -349,38 +349,45 @@ def main():
         base = pattern_notes.get(label) or f"Tutti · {format_stakes_summary(key, label)}"
         return base
 
-    with st.expander("📊 Riepilogo tutte le strategie (unità)", expanded=unit_results is not None):
-        if unit_results is None:
-            st.info("Clicca **Aggiorna riepilogo** in alto per calcolare profit, DD e winrate.")
-        else:
-            summary_rows = [
-                unit_stats(unit_results["Combined"], "Combined", pattern_notes.get("Combined", "")),
-                unit_stats(unit_results["HT"], "HT", _tier_note("HT", "ht")),
-                unit_stats(unit_results["O15"], "O15", _tier_note("O15", "o15")),
-                unit_stats(unit_results["O25"], "O25", _tier_note("O25", "o25")),
-            ]
-            if not unit_results["SH0"].empty:
-                summary_rows.append(unit_stats(unit_results["SH0"], "SH0", _tier_note("SH0", "sh0")))
-            if not unit_results["SH1"].empty:
-                summary_rows.append(unit_stats(unit_results["SH1"], "SH1", _tier_note("SH1", "sh1")))
-            if not unit_results["SH2"].empty:
-                summary_rows.append(unit_stats(unit_results["SH2"], "SH2", _tier_note("SH2", "sh2")))
-            if unit_results.get("MANUAL") is not None and not unit_results["MANUAL"].empty:
-                summary_rows.append(unit_stats(
-                    unit_results["MANUAL"],
-                    get_manual_label(),
-                    _tier_note("MANUAL", "manual"),
-                ))
-            if pattern_notes:
-                st.caption(
-                    "Pattern attivi: "
-                    + " · ".join(f"**{k}** → {v}" for k, v in pattern_notes.items())
+    from ui.headbar import strategy_section_session_key
+
+    strategy_section = st.session_state.get(strategy_section_session_key(page))
+    strategy_pages = {"ht", "o15", "o25", "sh0", "sh1", "sh2", "combined", "manual"}
+    hide_summary = page in strategy_pages and strategy_section == "daily"
+
+    if not hide_summary:
+        with st.expander("📊 Riepilogo tutte le strategie (unità)", expanded=unit_results is not None):
+            if unit_results is None:
+                st.info("Clicca **Aggiorna riepilogo** in alto per calcolare profit, DD e winrate.")
+            else:
+                summary_rows = [
+                    unit_stats(unit_results["Combined"], "Combined", pattern_notes.get("Combined", "")),
+                    unit_stats(unit_results["HT"], "HT", _tier_note("HT", "ht")),
+                    unit_stats(unit_results["O15"], "O15", _tier_note("O15", "o15")),
+                    unit_stats(unit_results["O25"], "O25", _tier_note("O25", "o25")),
+                ]
+                if not unit_results["SH0"].empty:
+                    summary_rows.append(unit_stats(unit_results["SH0"], "SH0", _tier_note("SH0", "sh0")))
+                if not unit_results["SH1"].empty:
+                    summary_rows.append(unit_stats(unit_results["SH1"], "SH1", _tier_note("SH1", "sh1")))
+                if not unit_results["SH2"].empty:
+                    summary_rows.append(unit_stats(unit_results["SH2"], "SH2", _tier_note("SH2", "sh2")))
+                if unit_results.get("MANUAL") is not None and not unit_results["MANUAL"].empty:
+                    summary_rows.append(unit_stats(
+                        unit_results["MANUAL"],
+                        get_manual_label(),
+                        _tier_note("MANUAL", "manual"),
+                    ))
+                if pattern_notes:
+                    st.caption(
+                        "Pattern attivi: "
+                        + " · ".join(f"**{k}** → {v}" for k, v in pattern_notes.items())
+                    )
+                render_metric_table(
+                    pd.DataFrame(summary_rows),
+                    STRATEGY_SUMMARY_COLUMNS,
+                    seed_col="Strategia",
                 )
-            render_metric_table(
-                pd.DataFrame(summary_rows),
-                STRATEGY_SUMMARY_COLUMNS,
-                seed_col="Strategia",
-            )
 
 
 if __name__ == "__main__":

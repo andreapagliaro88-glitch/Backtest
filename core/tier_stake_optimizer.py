@@ -126,6 +126,27 @@ def _metrics_from_events(
     }
 
 
+def evaluate_pattern_combo(
+    match_records: list,
+    combo: tuple[str, ...],
+    system: str,
+    base_rules: TierRules,
+    *,
+    dd_weight: float = 0.6,
+) -> dict:
+    """Metriche profit/DD/score per una combinazione — stesso motore di Simula stake."""
+    combo_rules = rules_for_pattern_combo(combo, base_rules)
+    events = _record_tier_events_from_records(match_records, combo, combo_rules, system)
+    po = profit_odds_for(system)
+    row = _metrics_from_events(events, combo_rules, po, dd_weight)
+    row.update({
+        "combo": combo_label(combo),
+        "n_patterns": len(combo),
+        "patterns": list(combo),
+    })
+    return row
+
+
 def _stake_grid() -> list[tuple[float, float, float, float]]:
     t1_vals = [3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
     t2_vals = [2.0, 2.5, 3.0, 3.5, 4.0, 5.0]
@@ -269,7 +290,6 @@ def simulate_stakes_by_pattern_combos(
 
     all_patterns = tuple(patterns)
     rules_all = rules_for_pattern_combo(all_patterns, base_rules)
-    po = profit_odds_for(system)
     combos = enumerate_pattern_combos(patterns)
     total = len(combos)
     rows: list[dict] = []
@@ -281,14 +301,7 @@ def simulate_stakes_by_pattern_combos(
     match_records = prepare_tier_records(sys_df, system)
 
     for i, combo in enumerate(combos):
-        combo_rules = rules_for_pattern_combo(combo, base_rules)
-        events = _record_tier_events_from_records(match_records, combo, combo_rules, system)
-        row = _metrics_from_events(events, combo_rules, po, dd_weight)
-        row.update({
-            "combo": combo_label(combo),
-            "n_patterns": len(combo),
-            "patterns": list(combo),
-        })
+        row = evaluate_pattern_combo(match_records, combo, system, base_rules, dd_weight=dd_weight)
         rows.append(row)
         if progress_callback and total:
             progress_callback((i + 1) / total)
@@ -301,13 +314,7 @@ def simulate_stakes_by_pattern_combos(
         df = df[df["max_dd"] >= max_dd_limit]
     df = df.sort_values(["score", "profit"], ascending=False).reset_index(drop=True)
 
-    baseline_events = _record_tier_events_from_records(match_records, all_patterns, rules_all, system)
-    baseline = _metrics_from_events(baseline_events, rules_all, po, dd_weight)
-    baseline.update({
-        "combo": combo_label(all_patterns),
-        "n_patterns": len(all_patterns),
-        "patterns": list(all_patterns),
-    })
+    baseline = evaluate_pattern_combo(match_records, all_patterns, system, base_rules, dd_weight=dd_weight)
 
     return baseline, df, df.copy(), rules_all
 
