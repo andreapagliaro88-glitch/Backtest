@@ -14,6 +14,7 @@ from core.daily_trades import (
     save_journal,
 )
 from ui.journal_dashboard import render_journal_section
+from ui.metric_table import render_simple_table
 
 DAILY_CSS = """
 <style>
@@ -164,10 +165,19 @@ def show_daily_trades_tab(initial_bankroll: float):
 
     if merged is not None and not merged.empty:
         with st.expander("Riepilogo merge segnali", expanded=False):
-            st.dataframe(
+            merge_cols = [
+                {"key": "data", "label": "Data", "kind": "text"},
+                {"key": "ora", "label": "Ora", "kind": "text"},
+                {"key": "campionato", "label": "Campionato", "kind": "text_muted"},
+                {"key": "partita", "label": "Partita", "kind": "text"},
+                {"key": "strategia", "label": "Strategia", "kind": "pill"},
+                {"key": "segnali", "label": "Segnali", "kind": "badge"},
+                {"key": "fonti", "label": "Fonti", "kind": "text_muted"},
+            ]
+            render_simple_table(
                 merged[["data", "ora", "campionato", "partita", "strategia", "segnali", "fonti"]],
-                use_container_width=True,
-                hide_index=True,
+                merge_cols,
+                seed_col="partita",
             )
 
     if plan_df is not None and not plan_df.empty:

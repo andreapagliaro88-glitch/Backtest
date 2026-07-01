@@ -15,6 +15,13 @@ from core.tier_optimizer import (
     tier_rules_from_dict,
     tier_rules_to_dict,
 )
+from ui.metric_table import (
+    STAKE_SIM_COLUMNS,
+    TIER_OPT_COLUMNS,
+    TIER_SUMMARY_COLUMNS,
+    render_metric_table,
+    render_simple_table,
+)
 
 
 def supports_tier(system: str | None) -> bool:
@@ -165,11 +172,18 @@ def show_tier_metodo_panel(cfg_key: str, system: str, strategy_label: str, df_tr
                 sample = df_trades[df_trades["patterns_str"].astype(str).str.len() > 0][
                     ["date", "tier_label", "patterns_str", "stake", "profit"]
                 ].head(20)
-                st.dataframe(sample, use_container_width=True, hide_index=True)
+                preview_cols = [
+                    {"key": "date", "label": "Data", "kind": "text"},
+                    {"key": "tier_label", "label": "Tier", "kind": "pill"},
+                    {"key": "patterns_str", "label": "Pattern", "kind": "text_muted"},
+                    {"key": "stake", "label": "Stake (U)", "kind": "text"},
+                    {"key": "profit", "label": "Profit (U)", "kind": "profit_signed"},
+                ]
+                render_simple_table(sample, preview_cols, seed_col="patterns_str")
         summary = tier_summary(df_trades)
         if not summary.empty:
             st.markdown("**Performance per tier**")
-            st.dataframe(summary, use_container_width=True, hide_index=True)
+            render_metric_table(summary, TIER_SUMMARY_COLUMNS, seed_col="Tier")
             if not active.empty and "tier" in active.columns:
                 by_tier = active.groupby("tier").size()
                 st.caption(
@@ -214,17 +228,7 @@ def render_tier_optimizer(cfg_key: str, system: str, strategy_label: str, df_raw
 
     show_cols = ["pattern", "suggested_tier", "trades", "profit", "max_dd", "score", "winrate_pct", "motivo"]
     show_cols = [c for c in show_cols if c in result_df.columns]
-    view = result_df[show_cols].rename(columns={
-        "pattern": "Pattern",
-        "suggested_tier": "Tier suggerito",
-        "trades": "Trade",
-        "profit": "Profit (U)",
-        "max_dd": "Max DD (U)",
-        "score": "Score",
-        "winrate_pct": "Winrate %",
-        "motivo": "Motivo",
-    })
-    st.dataframe(view, use_container_width=True, hide_index=True)
+    render_metric_table(result_df[show_cols], TIER_OPT_COLUMNS, seed_col="pattern")
 
     if suggested_dict:
         t3 = suggested_dict.get("tier3_patterns", [])
@@ -262,7 +266,6 @@ def render_stake_simulator(cfg_key: str, system: str, strategy_label: str, df_ra
     from core.pattern_combo_optimizer import combos_per_size, count_pattern_combos
     from core.tier_stake_optimizer import format_stake_combo, simulate_stakes_by_pattern_combos
     from ui.plot_theme import plot_scatter
-    from ui.st_widgets import dataframe_kwargs
 
     st.markdown(f"### Simulazione stake — {strategy_label}")
     st.caption(
@@ -379,17 +382,7 @@ def render_stake_simulator(cfg_key: str, system: str, strategy_label: str, df_ra
     st.caption(f"Tabella — **{len(show):,}** combinazioni (ordinate per score)")
     table_cols = ["#", "n_patterns", "combo", "stakes", "profit", "max_dd", "score", "calmar", "trades", "winrate_pct"]
     table_cols = [c for c in table_cols if c in show.columns]
-    st.dataframe(
-        show[table_cols].rename(columns={
-            "#": "Rank", "n_patterns": "N° pattern", "combo": "Combinazione",
-            "stakes": "Stake T1/T2/T3/T4", "profit": "Profit (U)",
-            "max_dd": "Max DD (U)", "score": "Score", "calmar": "Calmar",
-            "trades": "Trade", "winrate_pct": "Winrate %",
-        }),
-        use_container_width=True,
-        hide_index=True,
-        **dataframe_kwargs(len(show)),
-    )
+    render_metric_table(show[table_cols], STAKE_SIM_COLUMNS, seed_col="combo")
 
     default_rank = int(st.session_state.get(f"{cfg_key}_sim_pick_rank", 1))
     default_rank = max(1, min(default_rank, len(view_df)))

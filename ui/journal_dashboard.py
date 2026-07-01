@@ -9,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+from ui.metric_table import render_simple_table
 from ui.plot_theme import PLOT_LAYOUT, PLOTLY_CONFIG, style_figure
 
 from compound_config import PROFIT_ODDS
@@ -541,15 +542,26 @@ def render_journal_section(journal: pd.DataFrame, bankroll_input: float, initial
 
         if not live.empty:
             with st.expander(f"⚽ In corso ({len(live)}) — non registrare ancora"):
-                st.dataframe(
-                    live[["ora", "partita", "strategia", "stake_eur"]],
-                    use_container_width=True, hide_index=True,
-                )
+                live_cols = [
+                    {"key": "ora", "label": "Ora", "kind": "text"},
+                    {"key": "partita", "label": "Partita", "kind": "text"},
+                    {"key": "strategia", "label": "Strategia", "kind": "pill"},
+                    {"key": "stake_eur", "label": "Stake (€)", "kind": "text"},
+                ]
+                render_simple_table(live[["ora", "partita", "strategia", "stake_eur"]], live_cols, seed_col="partita")
         if not future.empty:
             with st.expander(f"⏳ Non ancora iniziate ({len(future)})"):
-                st.dataframe(
+                future_cols = [
+                    {"key": "data", "label": "Data", "kind": "text"},
+                    {"key": "ora", "label": "Ora", "kind": "text"},
+                    {"key": "partita", "label": "Partita", "kind": "text"},
+                    {"key": "strategia", "label": "Strategia", "kind": "pill"},
+                    {"key": "stake_eur", "label": "Stake (€)", "kind": "text"},
+                ]
+                render_simple_table(
                     future[["data", "ora", "partita", "strategia", "stake_eur"]],
-                    use_container_width=True, hide_index=True,
+                    future_cols,
+                    seed_col="partita",
                 )
 
         st.markdown("</div>", unsafe_allow_html=True)

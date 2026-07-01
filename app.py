@@ -1,5 +1,9 @@
+import importlib
 import pandas as pd
 import streamlit as st
+
+import ui.headbar as _headbar_module
+importlib.reload(_headbar_module)
 
 from compound_config import INITIAL_BANKROLL
 from core.backtest import prepare_grouped, run_backtest
@@ -14,7 +18,8 @@ from core.sh2_backtest import run_sh2_backtest
 from ui.ccs_dashboard import show_ccs_compound_tab
 from ui.daily_trades_tab import show_daily_trades_tab
 from ui.footystats_dashboard import show_footystats_tab
-from ui.plot_theme import plot_bar, plot_line
+from ui.metric_table import STRATEGY_SUMMARY_COLUMNS, render_metric_table, render_simple_table
+from ui.headbar import inject_headbar_styles, render_main_nav
 from ui.strategy_tabs import show_combined_tab, show_ht_tab, show_o15_tab, show_o25_tab, show_sh0_tab, show_sh1_tab, show_sh2_tab
 from ui.manual_strategy_tab import show_manual_strategy_tab, SESSION_DF_KEY as MANUAL_DF_KEY, SESSION_ODDS_KEY as MANUAL_ODDS_KEY
 from core.manual_loader import load_from_folder as load_manual_from_folder
@@ -35,10 +40,35 @@ st.markdown(
     [data-testid="stAppViewContainer"] > section.main > div {
         max-width: 100%;
     }
+
+    /* Compatta spazio sopra la headbar */
+    header[data-testid="stHeader"] {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        visibility: hidden !important;
+    }
+    div[data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stDecoration"] { display: none !important; }
+
+    .stApp [data-testid="stMain"] {
+        padding-top: 0 !important;
+    }
+    .stApp [data-testid="stMainBlockContainer"] {
+        padding-top: 0.5rem !important;
+        padding-bottom: 1rem !important;
+    }
+    section.main .block-container {
+        padding-top: 0.5rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
 </style>
 """,
     unsafe_allow_html=True,
 )
+
+inject_headbar_styles()
 
 
 @st.cache_data
@@ -215,7 +245,12 @@ def show_unit_tab(df, label):
     plot_bar(monthly_profit, x="date", y="profit", title=f"Profitto mensile — {label}", key=f"unit_bar_{label}")
 
     with st.expander("Tabella trade"):
-        st.dataframe(df, use_container_width=True)
+        cols = [{"key": c, "label": c, "kind": "text"} for c in df.columns]
+        if "profit" in df.columns:
+            for col in cols:
+                if col["key"] == "profit":
+                    col["kind"] = "profit_signed"
+        render_simple_table(df, cols, seed_col=df.columns[0])
 
 
 def show_compound_tab(df_trades, ccs, initial_bankroll):
@@ -237,10 +272,9 @@ def main():
     if MANUAL_ODDS_KEY in st.session_state:
         set_manual_odds(st.session_state[MANUAL_ODDS_KEY])
 
-    hdr1, hdr2, hdr3 = st.columns([4, 1, 1])
-    with hdr1:
-        st.title("Sistema Backtest")
-        st.caption("HT · Over 1.5 · Over 2.5 · 0 SH · 1 SH · 2 SH · Manuale · Combined · Compound · FootyStats")
+    page = render_main_nav()
+
+    hdr2, hdr3 = st.columns([1, 1])
     with hdr2:
         if st.button("Aggiorna riepilogo", type="primary", use_container_width=True):
             with st.spinner("Calcolo backtest..."):
@@ -270,31 +304,25 @@ def main():
     unit_results = st.session_state.get(SUMMARY_RESULTS_KEY)
     pattern_notes = st.session_state.get(SUMMARY_NOTES_KEY) or {}
 
-    tabs = st.tabs([
-        "Trade Giornaliero",
-        "Combined", "HT", "Over 1.5", "Over 2.5", "0 SH", "1 SH", "2 SH", "Manuale",
-        "Compound €", "Analisi Campionati",
-    ])
-
-    with tabs[0]:
+    if page == "daily":
         show_daily_trades_tab(initial_bankroll)
-    with tabs[1]:
+    elif page == "combined":
         show_combined_tab(df_raw, df_grouped)
-    with tabs[2]:
+    elif page == "ht":
         show_ht_tab(df_raw)
-    with tabs[3]:
+    elif page == "o15":
         show_o15_tab(df_raw)
-    with tabs[4]:
+    elif page == "o25":
         show_o25_tab(df_raw)
-    with tabs[5]:
+    elif page == "sh0":
         show_sh0_tab()
-    with tabs[6]:
+    elif page == "sh1":
         show_sh1_tab()
-    with tabs[7]:
+    elif page == "sh2":
         show_sh2_tab()
-    with tabs[8]:
+    elif page == "manual":
         show_manual_strategy_tab()
-    with tabs[9]:
+    elif page == "compound":
         if df_raw.empty:
             st.info("Compound richiede dati HT/O15/O25 in `data/`.")
         else:
@@ -312,7 +340,7 @@ def main():
                 )
             else:
                 st.info("Clicca **Esegui compound CCS** per avviare il backtest compound.")
-    with tabs[10]:
+    elif page == "footystats":
         show_footystats_tab()
 
     from ui.tier_metodo import format_stakes_summary
@@ -348,7 +376,11 @@ def main():
                     "Pattern attivi: "
                     + " · ".join(f"**{k}** → {v}" for k, v in pattern_notes.items())
                 )
-            st.dataframe(pd.DataFrame(summary_rows), use_container_width=True, hide_index=True)
+            render_metric_table(
+                pd.DataFrame(summary_rows),
+                STRATEGY_SUMMARY_COLUMNS,
+                seed_col="Strategia",
+            )
 
 
 if __name__ == "__main__":

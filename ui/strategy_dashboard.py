@@ -1,17 +1,22 @@
 """Dashboard riutilizzabile: backtest + combinazioni pattern + ottimizza stake."""
 from __future__ import annotations
 
+import importlib
 from dataclasses import dataclass
 from typing import Callable
 
 import pandas as pd
 import streamlit as st
 
+import ui.combo_size_table as _combo_size_table_module
+import ui.headbar as _headbar_module
+importlib.reload(_headbar_module)
+importlib.reload(_combo_size_table_module)
+
 from compound_config import INITIAL_BANKROLL
 from core.ccs_runner import enrich_trades_with_eur, format_trades_eur_display, run_ccs_on_backtest_df
 from core.pattern_combo_optimizer import (
     best_combos,
-    combo_display_columns,
     combos_per_size,
     count_pattern_combos,
     list_available_patterns,
@@ -20,8 +25,16 @@ from core.pattern_combo_optimizer import (
     split_combos_by_n,
 )
 from core.strategy_state_store import hydrate_session, persist_from_session
+from ui.combo_size_table import render_combo_size_overview
+from ui.headbar import render_strategy_nav
+from ui.metric_table import (
+    COMBO_RESULT_COLUMNS,
+    OPT_STAKE_COLUMNS,
+    prepare_combo_view,
+    render_metric_table,
+    render_simple_table,
+)
 from ui.plot_theme import plot_bar, plot_line
-from ui.st_widgets import dataframe_kwargs
 from ui.tier_metodo import (
     active_tier_rules,
     apply_stake_rules,
@@ -144,11 +157,15 @@ def _render_ccs_backtest(
 
     if ccs.withdrawals:
         with st.expander("Prelievi CCS"):
-            st.dataframe(pd.DataFrame(ccs.withdrawals_dataframe_rows()), use_container_width=True, hide_index=True)
+            wd = pd.DataFrame(ccs.withdrawals_dataframe_rows())
+            cols = [{"key": c, "label": c, "kind": "text"} for c in wd.columns]
+            render_simple_table(wd, cols)
 
     if ccs.tiers_reached:
         with st.expander("Scaglioni 1U raggiunti"):
-            st.dataframe(pd.DataFrame(ccs.tiers_dataframe_rows()), use_container_width=True, hide_index=True)
+            tr = pd.DataFrame(ccs.tiers_dataframe_rows())
+            cols = [{"key": c, "label": c, "kind": "text"} for c in tr.columns]
+            render_simple_table(tr, cols)
 
     df_display = enrich_trades_with_eur(df_trades, df_ccs)
     n_skip = int((df_display["ingresso"] == "SKIP").sum()) if not df_display.empty else 0
@@ -169,10 +186,13 @@ def _render_ccs_backtest(
                     "Pattern più saltati: "
                     + " · ".join(f"{p} ({n})" for p, n in top_skip.items())
                 )
-        st.dataframe(format_trades_eur_display(df_display), use_container_width=True, hide_index=True)
-
-
-SECTIONS = ("📈 Backtest attuale", "🧩 Combinazioni pattern", "⚙️ Ottimizza stake")
+        trades_view = format_trades_eur_display(df_display)
+        trade_cols = [{"key": c, "label": c, "kind": "text"} for c in trades_view.columns]
+        if "Profitto (€)" in trades_view.columns:
+            for col in trade_cols:
+                if col["key"] == "Profitto (€)":
+                    col["kind"] = "profit_signed"
+        render_simple_table(trades_view, trade_cols, seed_col=trades_view.columns[0])
 
 
 def active_patterns_key(cfg_key: str) -> str:
@@ -380,52 +400,144 @@ def _render_combo_size_overview(
     combo_df: pd.DataFrame,
     patterns: list[str],
     cfg: StrategyConfig,
+    df_raw: pd.DataFrame | None = None,
 ):
-    """Mostra tutte le combinazioni raggruppate: n, n-1, …, 1 pattern."""
-    if combo_df is None or combo_df.empty or not patterns:
-        return
-
-    n = len(patterns)
-    groups = split_combos_by_n(combo_df, n)
-    stakes_label = _stakes_label_for_combo(cfg)
-    expected = combos_per_size(n)
-    total_expected = count_pattern_combos(n)
-
-    st.markdown("#### Tutte le combinazioni per dimensione")
-    parts = [
-        f"**{size}** → {len(groups.get(size, []))}/{expected[size]}"
-        for size in range(n, 0, -1)
-    ]
-    st.caption(
-        f"**{len(combo_df):,}** risultati su **{total_expected:,}** combinazioni possibili "
-        f"({' · '.join(parts)})"
+    """Mostra tutte le combinazioni raggruppate per dimensione (UI dashboard)."""
+    render_combo_size_overview(
+        combo_df,
+        patterns,
+        cfg_key=cfg.key,
+        stakes_label=_stakes_label_for_combo(cfg),
+        active_combo_label=get_active_combo_label(cfg.key),
+        on_refresh=(
+            (lambda: _ensure_pattern_combos(cfg, patterns, df_raw, force=True))
+            if df_raw is not None
+            else None
+        ),
     )
 
-    for size in range(n, 0, -1):
-        sub = groups.get(size)
-        count = 0 if sub is None else len(sub)
-        title = f"{size} pattern — {count}/{expected[size]} combinazioni"
-        with st.expander(title, expanded=(size == n)):
-            if sub is None or sub.empty:
-                st.caption("Nessun risultato.")
-            else:
-                st.dataframe(
-                    combo_display_columns(sub, stakes_label=stakes_label),
-                    use_container_width=True,
-                    hide_index=True,
-                )
+
+def _metric_threshold_kwargs(
+    min_profit: float,
+    min_max_dd: float,
+    min_trades: int | float,
+    min_winrate: float,
+    min_calmar: float,
+) -> dict:
+    return {
+        "min_profit": None if min_profit <= -900 else min_profit,
+        "min_max_dd": None if min_max_dd <= -900 else min_max_dd,
+        "min_trades": int(min_trades) if min_trades > 0 else None,
+        "min_winrate_pct": float(min_winrate) if min_winrate > 0 else None,
+        "min_calmar": float(min_calmar) if min_calmar > 0 else None,
+    }
 
 
-def _filter_combo_view(combo_df: pd.DataFrame, size_filter: str, n_patterns: int) -> pd.DataFrame:
-    if size_filter == "Tutte le dimensioni":
+def _apply_metric_filters(
+    df: pd.DataFrame,
+    *,
+    search_col: str | None = None,
+    search: str = "",
+    min_profit: float | None = None,
+    min_max_dd: float | None = None,
+    min_trades: int | None = None,
+    min_winrate_pct: float | None = None,
+    min_calmar: float | None = None,
+) -> pd.DataFrame:
+    if df.empty:
+        return df
+
+    view = df.copy()
+    if search and search.strip() and search_col and search_col in view.columns:
+        q = search.strip().lower()
+        view = view[view[search_col].astype(str).str.lower().str.contains(q, regex=False)]
+
+    if min_profit is not None:
+        view = view[view["profit"] >= min_profit]
+    if min_max_dd is not None:
+        view = view[view["max_dd"] >= min_max_dd]
+    if min_trades is not None and min_trades > 0:
+        view = view[view["trades"] >= min_trades]
+    if min_winrate_pct is not None and min_winrate_pct > 0:
+        view = view[view["winrate"] * 100 >= min_winrate_pct]
+    if min_calmar is not None and min_calmar > 0:
+        view = view[view["calmar"] >= min_calmar]
+
+    return view
+
+
+def _apply_combo_filters(
+    combo_df: pd.DataFrame,
+    *,
+    size_filter: str,
+    search: str = "",
+    include_patterns: list[str] | None = None,
+    min_profit: float | None = None,
+    min_max_dd: float | None = None,
+    min_trades: int | None = None,
+    min_winrate_pct: float | None = None,
+    min_calmar: float | None = None,
+) -> pd.DataFrame:
+    """Applica filtri alla tabella combinazioni."""
+    if combo_df.empty:
         return combo_df
-    if size_filter.endswith("pattern"):
+
+    view = combo_df.copy()
+
+    if size_filter and size_filter != "Tutte le dimensioni" and size_filter.endswith("pattern"):
         try:
             size = int(size_filter.split()[0])
-            return combo_df[combo_df["n_patterns"] == size]
+            view = view[view["n_patterns"] == size]
         except ValueError:
-            return combo_df
-    return combo_df
+            pass
+
+    if search and search.strip():
+        q = search.strip().lower()
+        view = view[view["combo"].astype(str).str.lower().str.contains(q, regex=False)]
+
+    if include_patterns:
+        must = set(include_patterns)
+
+        def _has_patterns(row) -> bool:
+            raw = row.get("patterns")
+            if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+                return False
+            pats = set(raw) if isinstance(raw, (list, tuple, set)) else {raw}
+            return must.issubset(pats)
+
+        view = view[view.apply(_has_patterns, axis=1)]
+
+    return _apply_metric_filters(
+        view,
+        min_profit=min_profit,
+        min_max_dd=min_max_dd,
+        min_trades=min_trades,
+        min_winrate_pct=min_winrate_pct,
+        min_calmar=min_calmar,
+    )
+
+
+def _apply_opt_filters(
+    results_df: pd.DataFrame,
+    *,
+    search: str = "",
+    min_profit: float | None = None,
+    min_max_dd: float | None = None,
+    min_trades: int | None = None,
+    min_winrate_pct: float | None = None,
+    min_calmar: float | None = None,
+) -> pd.DataFrame:
+    """Applica filtri alla tabella ottimizzazione stake."""
+    return _apply_metric_filters(
+        results_df,
+        search_col="params_str",
+        search=search,
+        min_profit=min_profit,
+        min_max_dd=min_max_dd,
+        min_trades=min_trades,
+        min_winrate_pct=min_winrate_pct,
+        min_calmar=min_calmar,
+    )
 
 
 def _combo_size_filter_options(n_patterns: int) -> list[str]:
@@ -529,30 +641,89 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
 
     sort_by = st.selectbox(
         "Ordina per",
-        ["score", "profit", "max_dd", "calmar", "winrate", "trades"],
+        ["score", "profit", "max_dd", "calmar", "winrate", "trades", "n_patterns"],
         key=f"{cfg.key}_combo_sort",
     )
     n_pat = len(patterns)
-    size_filter = st.selectbox(
-        "Filtra per dimensione",
+
+    st.markdown("#### 🔎 Filtri combinazioni")
+    f1, f2, f3, f4 = st.columns(4)
+    size_filter = f1.selectbox(
+        "N° pattern",
         _combo_size_filter_options(n_pat),
         key=f"{cfg.key}_combo_size_filter",
     )
+    search = f2.text_input(
+        "Cerca nel nome",
+        placeholder="es. Carry + Drive",
+        key=f"{cfg.key}_combo_search",
+    )
+    include_patterns = f3.multiselect(
+        "Deve includere",
+        options=patterns,
+        default=[],
+        key=f"{cfg.key}_combo_include_pat",
+        help="Mostra solo combinazioni che contengono tutti i pattern selezionati.",
+    )
+    min_trades = f4.number_input(
+        "Trade min.",
+        min_value=0,
+        value=0,
+        step=10,
+        key=f"{cfg.key}_combo_min_trades",
+    )
+
+    g1, g2, g3, g4 = st.columns(4)
+    min_profit = g1.number_input(
+        "Profit min. (U)",
+        value=-999.0,
+        step=5.0,
+        key=f"{cfg.key}_combo_min_profit",
+    )
+    min_max_dd = g2.number_input(
+        "DD min. (U)",
+        value=-999.0,
+        step=1.0,
+        key=f"{cfg.key}_combo_min_dd",
+        help="Es. -15 → esclude DD peggiori di -15 U.",
+    )
+    min_winrate = g3.number_input(
+        "Winrate min. (%)",
+        min_value=0.0,
+        max_value=100.0,
+        value=0.0,
+        step=1.0,
+        key=f"{cfg.key}_combo_min_wr",
+    )
+    min_calmar = g4.number_input(
+        "Calmar min.",
+        min_value=0.0,
+        value=0.0,
+        step=0.5,
+        key=f"{cfg.key}_combo_min_calmar",
+    )
+
     ascending = sort_by == "max_dd"
     view = combo_df.sort_values(
         ["n_patterns", sort_by, "profit"],
         ascending=[False, ascending, False],
     ).copy()
-    view = _filter_combo_view(view, size_filter, n_pat)
+    view = _apply_combo_filters(
+        view,
+        size_filter=size_filter,
+        search=search,
+        include_patterns=include_patterns or None,
+        **_metric_threshold_kwargs(min_profit, min_max_dd, min_trades, min_winrate, min_calmar),
+    )
     stakes_label = _stakes_label_for_combo(cfg)
     st.caption(f"**{len(view):,}** combinazioni mostrate su **{len(combo_df):,}** totali")
-    from ui.st_widgets import dataframe_kwargs
-    st.dataframe(
-        combo_display_columns(view, stakes_label=stakes_label),
-        use_container_width=True,
-        hide_index=True,
-        **dataframe_kwargs(len(view)),
-    )
+
+    if view.empty:
+        st.warning("Nessuna combinazione con i filtri selezionati. Allarga i filtri o resetta i valori.")
+        return
+
+    combo_view = prepare_combo_view(view, stakes_label=stakes_label)
+    render_metric_table(combo_view, COMBO_RESULT_COLUMNS, stakes_label=stakes_label)
 
     st.download_button(
         "📥 Scarica CSV combinazioni",
@@ -563,7 +734,7 @@ def _render_combo_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
     )
 
     col_a, col_b = st.columns([3, 1])
-    combo_options = combo_df["combo"].tolist()
+    combo_options = view["combo"].tolist()
     _sync_combo_summary_pick(cfg.key, combo_options)
     with col_a:
         active_label = get_active_combo_label(cfg.key)
@@ -774,34 +945,91 @@ def _render_stake_tab(cfg: StrategyConfig, patterns: list[str], df_raw: pd.DataF
             show["params_str"] = show.apply(format_stake_combo, axis=1)
         else:
             show["params_str"] = show["params"].apply(cfg.format_params)
-        show["#"] = range(1, len(show) + 1)
 
-        table_cols = ["#", "profit", "max_dd", "score", "calmar", "trades", "winrate_pct", "params_str"]
-        n_show = len(show)
-        st.markdown(f"**{n_show:,}** configurazioni in tabella")
-        st.dataframe(
-            show[table_cols].rename(columns={
-                "#": "Rank", "profit": "Profit (U)", "max_dd": "Max DD (U)",
-                "score": "Score", "calmar": "Calmar", "trades": "Trade",
-                "winrate_pct": "Winrate %", "params_str": "Parametri",
-            }),
-            use_container_width=True,
-            hide_index=True,
-            **dataframe_kwargs(n_show),
+        sort_by = st.selectbox(
+            "Ordina per",
+            ["score", "profit", "max_dd", "calmar", "winrate", "trades"],
+            key=f"{cfg.key}_opt_sort",
         )
 
+        st.markdown("#### 🔎 Filtri risultati")
+        f1, f2, f3, f4 = st.columns(4)
+        search = f1.text_input(
+            "Cerca nei parametri",
+            placeholder="es. T1=3.0",
+            key=f"{cfg.key}_opt_search",
+        )
+        min_trades = f2.number_input(
+            "Trade min.",
+            min_value=0,
+            value=0,
+            step=10,
+            key=f"{cfg.key}_opt_min_trades",
+        )
+        min_profit = f3.number_input(
+            "Profit min. (U)",
+            value=-999.0,
+            step=5.0,
+            key=f"{cfg.key}_opt_min_profit",
+        )
+        min_max_dd = f4.number_input(
+            "DD min. (U)",
+            value=-999.0,
+            step=1.0,
+            key=f"{cfg.key}_opt_min_dd",
+            help="Es. -15 → esclude DD peggiori di -15 U.",
+        )
+
+        g1, g2 = st.columns(2)
+        min_winrate = g1.number_input(
+            "Winrate min. (%)",
+            min_value=0.0,
+            max_value=100.0,
+            value=0.0,
+            step=1.0,
+            key=f"{cfg.key}_opt_min_wr",
+        )
+        min_calmar = g2.number_input(
+            "Calmar min.",
+            min_value=0.0,
+            value=0.0,
+            step=0.5,
+            key=f"{cfg.key}_opt_min_calmar",
+        )
+
+        ascending = sort_by == "max_dd"
+        view = _apply_opt_filters(
+            show,
+            search=search,
+            **_metric_threshold_kwargs(min_profit, min_max_dd, min_trades, min_winrate, min_calmar),
+        )
+        view = view.sort_values(
+            [sort_by, "profit"],
+            ascending=[ascending, False],
+        ).reset_index(drop=True)
+        view["#"] = range(1, len(view) + 1)
+
+        table_cols = ["#", "profit", "max_dd", "score", "calmar", "trades", "winrate_pct", "params_str"]
+        st.caption(f"**{len(view):,}** configurazioni mostrate su **{len(show):,}** totali")
+
+        if view.empty:
+            st.warning("Nessun risultato con i filtri selezionati. Allarga i filtri o resetta i valori.")
+            return
+
+        render_metric_table(view[table_cols], OPT_STAKE_COLUMNS, seed_col="params_str")
+
         default_rank = int(st.session_state.get(f"{cfg.key}_opt_pick_rank", 1))
-        default_rank = max(1, min(default_rank, len(results)))
+        default_rank = max(1, min(default_rank, len(view)))
         sel_rank = st.number_input(
             "Seleziona risultato (#)",
             min_value=1,
-            max_value=len(results),
+            max_value=len(view),
             value=default_rank,
             step=1,
             key=f"{cfg.key}_opt_pick_rank",
             help="Numero Rank dalla tabella sopra.",
         )
-        picked = results.iloc[int(sel_rank) - 1]
+        picked = view.iloc[int(sel_rank) - 1]
         _render_opt_pick_comparison(baseline, picked, int(sel_rank), format_fn)
 
         if use_tier and st.button(
@@ -869,28 +1097,8 @@ def show_strategy_tab(cfg: StrategyConfig):
 
     if supports_tier(cfg.system):
         show_tier_workflow_guide(cfg.key, cfg.system)
-        tab_bt, tab_tier, tab_stake_sim, tab_combo, tab_opt = st.tabs((
-            "📈 Backtest attuale",
-            "🎯 Ottimizza tier",
-            "⚖️ Simula stake",
-            "🧩 Combinazioni pattern",
-            "⚙️ Ottimizza stake",
-        ))
-    else:
-        tab_bt, tab_combo, tab_opt = st.tabs(list(SECTIONS))
-        tab_tier = tab_stake_sim = None
 
-    if st.session_state.get(_combo_results_key(cfg.key)) is not None:
-        done = st.session_state.get(_combo_results_key(cfg.key))
-        if done is not None and not done.empty:
-            label = get_active_combo_label(cfg.key)
-            if label:
-                st.caption(
-                    f"Combinazioni salvate: **{len(done)}** risultati · "
-                    f"combo attiva **{label}** (persiste dopo refresh)"
-                )
-            else:
-                st.caption(f"Combinazioni salvate: **{len(done)}** risultati (persiste dopo refresh)")
+    section = render_strategy_nav(cfg.key, with_tier=bool(cfg.system and supports_tier(cfg.system)))
 
     pat_list_for_combos: list[str] = []
     if cfg.system:
@@ -900,14 +1108,14 @@ def show_strategy_tab(cfg: StrategyConfig):
 
     combo_df_cached = _cached_combo_results(cfg.key)
 
-    with tab_bt:
+    if section == "bt":
         if _combo_is_outdated(cfg):
             st.warning(
                 "⚠️ Tier o stake cambiati dopo l'ultimo calcolo combinazioni. "
                 "I numeri sotto possono essere datati — vai su **Combinazioni pattern** e ricalcola."
             )
         if pat_list_for_combos and not combo_df_cached.empty:
-            _render_combo_size_overview(combo_df_cached, pat_list_for_combos, cfg)
+            _render_combo_size_overview(combo_df_cached, pat_list_for_combos, cfg, df_raw)
         elif pat_list_for_combos:
             st.caption(
                 "Apri **Combinazioni pattern** e clicca **Calcola tutte le combinazioni** "
@@ -968,18 +1176,16 @@ def show_strategy_tab(cfg: StrategyConfig):
                 )
             _render_ccs_backtest(df_trades, cfg.title, cfg.key, section="bt", system=cfg.system)
 
-    with tab_combo:
+    elif section == "combo":
         pat_list = list_available_patterns(df_raw, cfg.system) if cfg.system else patterns
         _render_combo_tab_fragment(cfg, pat_list, df_raw)
 
-    with tab_opt:
+    elif section == "opt":
         pat_list = list_available_patterns(df_raw, cfg.system) if cfg.system else []
         _render_stake_tab_fragment(cfg, pat_list, df_raw)
 
-    if tab_tier is not None:
-        with tab_tier:
-            render_tier_optimizer_fragment(cfg.key, cfg.system, cfg.title.split("—")[0].strip(), df_raw)
+    elif section == "tier":
+        render_tier_optimizer_fragment(cfg.key, cfg.system, cfg.title.split("—")[0].strip(), df_raw)
 
-    if tab_stake_sim is not None:
-        with tab_stake_sim:
-            render_stake_simulator_fragment(cfg.key, cfg.system, cfg.title.split("—")[0].strip(), df_raw)
+    elif section == "stake_sim":
+        render_stake_simulator_fragment(cfg.key, cfg.system, cfg.title.split("—")[0].strip(), df_raw)

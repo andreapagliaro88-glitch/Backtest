@@ -15,6 +15,7 @@ from core.probability_storage import (
     load_latest_for_league,
     save_results,
 )
+from ui.metric_table import render_simple_table
 
 MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
 
@@ -315,4 +316,4 @@ def render_edge_discovery(name_to_path: dict[str, str], league_names: list[str])
         for col in ("probability", "ci_low", "ci_high", "base_rate", "oos_probability", "confidence", "support"):
             if col in show.columns:
                 show[col] = show[col].map(lambda x: f"{x*100:.1f}%")
-        st.dataframe(show, use_container_width=True, hide_index=True)
+        render_simple_table(show, seed_col=show.columns[0] if len(show.columns) else "event_label")

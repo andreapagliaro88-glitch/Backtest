@@ -7,6 +7,7 @@ import streamlit as st
 from core.ccs_monte_carlo import run_ccs_monte_carlo
 from core.ccs_runner import trades_to_ccs_inputs
 from core.strategy_engine import iter_combined_trades
+from ui.metric_table import render_simple_table
 from ui.plot_theme import plot_histogram, plot_line
 
 
@@ -74,13 +75,16 @@ def show_ccs_compound_tab(df_trades, ccs_data, initial_bankroll, df_grouped=None
 
     if withdrawals:
         st.markdown("#### Prelievi")
-        st.dataframe(pd.DataFrame(withdrawals), use_container_width=True, hide_index=True)
+        wd = pd.DataFrame(withdrawals)
+        render_simple_table(wd, [{"key": c, "label": c, "kind": "text"} for c in wd.columns])
 
     st.markdown("#### Scaglioni 1U raggiunti")
-    st.dataframe(pd.DataFrame(tiers), use_container_width=True, hide_index=True)
+    tr = pd.DataFrame(tiers)
+    render_simple_table(tr, [{"key": c, "label": c, "kind": "text"} for c in tr.columns])
 
     with st.expander("Tabella trade compound"):
-        st.dataframe(df_trades, use_container_width=True)
+        cols = [{"key": c, "label": c, "kind": "text"} for c in df_trades.columns]
+        render_simple_table(df_trades, cols, seed_col=df_trades.columns[0])
 
     if df_grouped is not None and df_raw is not None:
         st.markdown("---")
