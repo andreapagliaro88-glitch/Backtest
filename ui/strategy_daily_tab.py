@@ -42,7 +42,7 @@ SUBTITLES: dict[str, str] = {
     "combined": (
         "Strategia <b>combinata</b> HT/O15/O25 + CCS — stessa orchestrazione del tab principale."
     ),
-    "manual": "Template manuale + CCS per trade manuali.",
+    "manual": "Upload Excel per pattern + stake tier (combo attiva). Quota da impostazione in alto.",
 }
 
 
@@ -172,6 +172,12 @@ def render_strategy_daily_tab(
     hint = FIXTURE_HINTS.get(key)
     tier_plan = _build_tier_plan(cfg_key, system or forced)
 
+    if key == "manual":
+        from core.manual_strategy import set_manual_odds
+        from ui.manual_strategy_tab import SESSION_ODDS_KEY
+        if SESSION_ODDS_KEY in st.session_state:
+            set_manual_odds(float(st.session_state[SESSION_ODDS_KEY]))
+
     from ui.tier_metodo import format_stakes_summary, supports_tier as _supports_tier
     if system and _supports_tier(system):
         from ui.strategy_dashboard import active_patterns_key, get_active_combo_label
@@ -179,10 +185,17 @@ def render_strategy_daily_tab(
         active_pats = tuple(st.session_state.get(active_patterns_key(cfg_key)) or ())
         combo_label = get_active_combo_label(cfg_key)
         if tier_plan:
+            from core.manual_strategy import get_manual_decimal_odds, get_manual_profit_odds
+            quota_txt = ""
+            if key == "manual":
+                quota_txt = (
+                    f" · **Quota:** {get_manual_decimal_odds():.2f} "
+                    f"(+{get_manual_profit_odds():.2f}U)"
+                )
             st.success(
                 f"**Combo attiva:** {combo_label or ' + '.join(active_pats)} · "
                 f"**Stake:** {format_stakes_summary(cfg_key, system, tier_plan.rules)} · "
-                f"**Pattern usati:** {len(active_pats)}"
+                f"**Pattern usati:** {len(active_pats)}{quota_txt}"
             )
         else:
             st.warning(

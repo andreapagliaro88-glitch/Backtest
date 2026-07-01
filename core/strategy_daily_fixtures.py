@@ -17,7 +17,7 @@ CFG_SYSTEMS: dict[str, tuple[str, ...]] = {
     "sh1": ("SH1",),
     "sh2": ("SH2",),
     "combined": ("HT", "O15", "O25"),
-    "manual": (),
+    "manual": ("MANUAL",),
 }
 
 
@@ -112,8 +112,11 @@ def fixture_files_as_upload_tuples(cfg_key: str) -> list[tuple[str, str]]:
 
 
 def forced_system_for_cfg(cfg_key: str) -> str | None:
-    allowed = CFG_SYSTEMS.get(cfg_key.lower(), ())
-    if cfg_key.lower() == "combined" or not allowed:
+    key = cfg_key.lower()
+    if key == "manual":
+        return "MANUAL"
+    allowed = CFG_SYSTEMS.get(key, ())
+    if key == "combined" or not allowed:
         return None
     return allowed[0] if len(allowed) == 1 else None
 
@@ -132,7 +135,10 @@ FIXTURE_HINTS: dict[str, str] = {
         "<code>Fixtures_HT ...</code>, <code>Fixtures_Ov. 1.5 ...</code>, "
         "<code>Fixtures_Ov. 2.5 ...</code> — orchestrazione combinata HT/O15/O25."
     ),
-    "manual": "Template manuale con colonne <code>strategia</code> e <code>segnali</code>.",
+    "manual": (
+        "File Excel <b>uno per pattern</b> (stesso formato del backtest: ID, Data UTC, Gol). "
+        "Solo i pattern della combo attiva vengono contati."
+    ),
 }
 
 DEFAULT_FIXTURE_HINT = (
@@ -148,15 +154,18 @@ def preview_merged_fixtures(
     active_patterns: tuple[str, ...] | None = None,
 ) -> pd.DataFrame:
     """Anteprima segnali da tutti i file nella cartella strategia."""
-    from core.fixture_parser import merge_fixture_files
-
     allowed = CFG_SYSTEMS.get(cfg_key.lower(), ())
     pats = active_patterns if active_patterns is not None else allowed
     file_list = fixture_files_as_upload_tuples(cfg_key)
     if not file_list:
         return pd.DataFrame()
 
-    merged = merge_fixture_files(file_list, active_patterns=pats if pats else None)
+    if cfg_key.lower() == "manual":
+        from core.manual_loader import merge_manual_daily_files
+        merged = merge_manual_daily_files(file_list, active_patterns=pats if pats else None)
+    else:
+        from core.fixture_parser import merge_fixture_files
+        merged = merge_fixture_files(file_list, active_patterns=pats if pats else None)
     if merged.empty:
         return merged
     if allowed:

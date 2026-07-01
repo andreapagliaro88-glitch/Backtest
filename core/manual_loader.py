@@ -129,3 +129,56 @@ def list_available_patterns(df: pd.DataFrame) -> list[str]:
     if df.empty or "pattern" not in df.columns:
         return []
     return sorted(df["pattern"].dropna().unique().tolist())
+
+
+def merge_manual_daily_files(
+    files: list[tuple],
+    active_patterns: tuple[str, ...] | list[str] | None = None,
+) -> pd.DataFrame:
+    """
+    Merge file Excel manuali del giorno (stesso formato backtest).
+    Ritorna dataframe compatibile con merge_fixture_files / daily_trades.
+    """
+    allowed = set(active_patterns) if active_patterns else None
+    rows: list[dict] = []
+
+    for buf, fname in files:
+        if isinstance(buf, (str, os.PathLike)):
+            content = Path(buf).read_bytes()
+        elif hasattr(buf, "read"):
+            content = buf.read()
+        else:
+            content = bytes(buf)
+        chunk = load_from_bytes(content, fname)
+        if chunk.empty:
+            continue
+        pat = pattern_from_filename(fname)
+        if allowed is not None and pat not in allowed:
+            continue
+        for _, r in chunk.iterrows():
+            rows.append({
+                "match_id": r["match_id"],
+                "data": pd.to_datetime(r["date"], errors="coerce"),
+                "ora": "",
+                "campionato": "",
+                "partita": f"Match {r['match_id']}",
+                "strategia": MANUAL_SYSTEM,
+                "segnali": 1,
+                "fonte_file": os.path.basename(fname),
+                "pattern": pat,
+            })
+
+    if not rows:
+        return pd.DataFrame()
+
+    raw = pd.DataFrame(rows).dropna(subset=["data"])
+    agg = raw.groupby(["match_id", "data", "strategia"], as_index=False).agg(
+        segnali=("segnali", "sum"),
+        ora=("ora", "first"),
+        campionato=("campionato", "first"),
+        partita=("partita", "first"),
+        fonti=("fonte_file", lambda x: ", ".join(sorted(set(x)))),
+        patterns=("pattern", lambda x: sorted(set(x))),
+    )
+    agg["patterns_str"] = agg["patterns"].apply(lambda p: " + ".join(p))
+    return agg.sort_values(["data", "ora", "match_id"]).reset_index(drop=True)

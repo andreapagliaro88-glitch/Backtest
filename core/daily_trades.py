@@ -99,6 +99,7 @@ SYSTEM_ALIASES = {
     "sh0": "SH0", "0 sh": "SH0", "0sh": "SH0",
     "sh1": "SH1", "1 sh": "SH1", "1sh": "SH1",
     "sh2": "SH2", "2 sh": "SH2", "2sh": "SH2",
+    "manual": "MANUAL", "manuale": "MANUAL",
 }
 
 
@@ -113,9 +114,16 @@ def normalize_system(value) -> str | None:
     if key in SYSTEM_ALIASES:
         return SYSTEM_ALIASES[key]
     upper = str(value).strip().upper()
-    if upper in ("HT", "O15", "O25", "SH0", "SH1", "SH2"):
+    if upper in ("HT", "O15", "O25", "SH0", "SH1", "SH2", "MANUAL"):
         return upper
     return None
+
+
+def _profit_odds_for(system: str) -> float:
+    if system in ("HT", "O15", "O25", "SH0", "SH1", "SH2", "MANUAL"):
+        from core.tier_config import profit_odds_for
+        return profit_odds_for(system)
+    return PROFIT_ODDS.get(system, 0.35)
 
 
 def parse_upload(df: pd.DataFrame) -> pd.DataFrame:
@@ -496,7 +504,7 @@ def apply_settlement(
         return apply_tier_settlement(trade, vinto, live.ccs, live.tier_state, tier_plan)
 
     system = trade["strategia"]
-    odds = PROFIT_ODDS[system]
+    odds = _profit_odds_for(system)
     stake_u = float(trade.get("stake_u") or 1.0)
 
     profit_eur = live.ccs.settle_trade(
@@ -734,7 +742,7 @@ def recompute_journal(
 
         replan_forced = None
         strat = strat_saved
-        if strat and strat not in ("—", "nan") and strat in ("HT", "O15", "O25", "SH0", "SH1", "SH2"):
+        if strat and strat not in ("—", "nan") and strat in ("HT", "O15", "O25", "SH0", "SH1", "SH2", "MANUAL"):
             other = sum(int(sig.get(s, 0)) for s in ("HT", "O15", "O25", "SH0", "SH1", "SH2") if s != strat)
             if other == 0:
                 replan_forced = strat
@@ -757,11 +765,16 @@ def process_fixture_upload(
     forced_system: str | None = None,
     tier_plan: StrategyDailyPlanConfig | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, LiveState, pd.DataFrame]:
-    """Merge file Fixtures e pianifica trade combinati."""
+    """Merge file Fixtures (o Excel manuali) e pianifica trade."""
     from core.fixture_parser import merge_fixture_files, merge_to_daily_format
 
     active_patterns = tier_plan.active_patterns if tier_plan else None
-    merged = merge_fixture_files(file_list, active_patterns=active_patterns)
+    use_manual = forced_system == "MANUAL" or (tier_plan is not None and tier_plan.system == "MANUAL")
+    if use_manual:
+        from core.manual_loader import merge_manual_daily_files
+        merged = merge_manual_daily_files(file_list, active_patterns=active_patterns)
+    else:
+        merged = merge_fixture_files(file_list, active_patterns=active_patterns)
     if allowed_systems:
         merged = merged[merged["strategia"].isin(allowed_systems)]
     daily = merge_to_daily_format(merged)

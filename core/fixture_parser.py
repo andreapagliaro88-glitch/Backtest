@@ -101,6 +101,9 @@ def pattern_from_fixture_filename(filename: str, strategia: str) -> str:
     if strategia in ("HT", "O15", "O25"):
         from core.pattern_loader import pattern_from_filename
         return pattern_from_filename(filename, strategia)
+    if strategia == "MANUAL":
+        from core.manual_loader import pattern_from_filename
+        return pattern_from_filename(filename)
     return os.path.splitext(os.path.basename(filename))[0]
 
 
